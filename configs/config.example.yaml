@@ -1,0 +1,86 @@
+server:
+  host: 0.0.0.0
+  port: ${SERVER_PORT:9999}
+  mode: ${SERVER_MODE:debug}
+  read_timeout: 10
+  write_timeout: 10
+  idle_timeout: 60
+
+database:
+  enabled: ${DB_ENABLED:true}
+  driver: ${DB_DRIVER:sqlite}
+  dsn: ${DB_DSN:}
+  host: ${DB_HOST:}
+  port: ${DB_PORT:0}
+  name: ${DB_NAME:tmp/go_scaffold2.db}
+  user: ${DB_USER:}
+  password: ${DB_PASSWORD:}
+  ssl_mode: ${DB_SSL_MODE:disable}
+  max_open_conns: 20
+  max_idle_conns: 10
+
+redis:
+  enabled: ${REDIS_ENABLED:false}
+  addr: ${REDIS_ADDR:127.0.0.1:6379}
+  password: ${REDIS_PASSWORD:}
+  db: ${REDIS_DB:0}
+
+logger:
+  level: info
+  format: json
+  output_path: stdout
+  error_output_path: stderr
+  filename: logs/app.log
+  max_size_mb: 100
+  max_backups: 10
+  max_age_days: 7
+  compress: false
+
+i18n:
+  default_locale: zh-CN
+  fallback_locale: en-US
+  locale_dir: configs/locales
+
+initdb:
+  enabled: true
+  driver: sqlite
+  output_dir: scripts/initdb
+  lock_file: scripts/initdb/.initdb.lock
+
+executor:
+  enabled: true
+  default_pool_size: 32
+
+jwt:
+  enabled: true
+  issuer: go-scaffold2
+  secret: ${JWT_SECRET:replace_me_with_a_private_secret}
+  access_token_ttl_minutes: 60
+  refresh_token_ttl_hours: 72
+
+rbac:
+  enabled: true
+  model_path: configs/rbac_model.conf
+  policy_table: casbin_rule
+  auto_save: true
+
+storage:
+  enabled: false
+  driver: local
+  root_dir: tmp/storage
+
+cors:
+  enabled: true
+  allow_origins:
+    - "*"
+  allow_methods:
+    - GET
+    - POST
+    - PUT
+    - PATCH
+    - DELETE
+    - OPTIONS
+  allow_headers:
+    - Authorization
+    - Content-Type
+    - X-Trace-ID

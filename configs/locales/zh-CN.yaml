@@ -1,0 +1,8 @@
+app_name: go-scaffold2
+cli_usage: 使用 server 或 initdb 命令进入对应运行模式
+phase_boundary: 当前仓库已完成 Phase 0-7，主链路、InitDB 工作流与质量收口均已完成
+initdb_script_generated: 已生成初始化 SQL 脚本
+initdb_dry_run: 已完成 InitDB dry-run，本次不会执行 SQL
+initdb_completed: 已完成数据库初始化并写入 lock file
+auth_logout_success: 已退出登录
+auth_password_changed: 密码修改成功

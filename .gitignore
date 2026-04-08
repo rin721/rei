@@ -1,0 +1,12 @@
+bin/
+dist/
+coverage.out
+coverage.html
+.idea/
+.vscode/
+.DS_Store
+configs/config.yaml
+configs/*.local.yaml
+*.local
+tmp/
+scripts/initdb/.initdb.lock
