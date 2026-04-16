@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	pkgstorage "github.com/rei0721/go-scaffold2/pkg/storage"
+	pkgstorage "github.com/rin721/go-scaffold2/pkg/storage"
 )
 
 func (a *App) initStorage() error {

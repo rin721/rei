@@ -5,8 +5,8 @@ import (
 	stderrors "errors"
 	"strings"
 
-	"github.com/rei0721/go-scaffold2/internal/models"
-	pkgdbtx "github.com/rei0721/go-scaffold2/pkg/dbtx"
+	"github.com/rin721/go-scaffold2/internal/models"
+	pkgdbtx "github.com/rin721/go-scaffold2/pkg/dbtx"
 	"gorm.io/gorm"
 )
 

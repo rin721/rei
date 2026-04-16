@@ -4,11 +4,11 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rei0721/go-scaffold2/internal/handler"
-	"github.com/rei0721/go-scaffold2/internal/middleware"
-	"github.com/rei0721/go-scaffold2/types"
-	"github.com/rei0721/go-scaffold2/types/constants"
-	apperrors "github.com/rei0721/go-scaffold2/types/errors"
+	"github.com/rin721/go-scaffold2/internal/handler"
+	"github.com/rin721/go-scaffold2/internal/middleware"
+	"github.com/rin721/go-scaffold2/types"
+	"github.com/rin721/go-scaffold2/types/constants"
+	apperrors "github.com/rin721/go-scaffold2/types/errors"
 )
 
 // Router 负责集中装配 Gin 路由与中间件。

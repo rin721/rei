@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	pkgrbac "github.com/rei0721/go-scaffold2/pkg/rbac"
+	pkgrbac "github.com/rin721/go-scaffold2/pkg/rbac"
 )
 
 func (a *App) initRBAC() error {

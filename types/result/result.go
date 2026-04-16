@@ -3,7 +3,7 @@ package result
 import (
 	"time"
 
-	apperrors "github.com/rei0721/go-scaffold2/types/errors"
+	apperrors "github.com/rin721/go-scaffold2/types/errors"
 )
 
 // Envelope 定义统一 API 响应外层结构。

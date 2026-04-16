@@ -4,7 +4,7 @@ import (
 	"context"
 	stderrors "errors"
 
-	pkgdbtx "github.com/rei0721/go-scaffold2/pkg/dbtx"
+	pkgdbtx "github.com/rin721/go-scaffold2/pkg/dbtx"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

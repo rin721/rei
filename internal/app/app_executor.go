@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	pkgexecutor "github.com/rei0721/go-scaffold2/pkg/executor"
+	pkgexecutor "github.com/rin721/go-scaffold2/pkg/executor"
 )
 
 func (a *App) initExecutor() error {

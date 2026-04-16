@@ -7,6 +7,8 @@ coverage.html
 .DS_Store
 configs/config.yaml
 configs/*.local.yaml
+.env
 *.local
+*.gomodx.bak
 tmp/
 scripts/initdb/.initdb.lock

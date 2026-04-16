@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/rei0721/go-scaffold2/types/constants"
+	"github.com/rin721/go-scaffold2/types/constants"
 )
 
 // I18n 选择请求使用的 locale 并写入上下文。

@@ -6,16 +6,16 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/rei0721/go-scaffold2/internal/config"
-	pkgcache "github.com/rei0721/go-scaffold2/pkg/cache"
-	pkgdatabase "github.com/rei0721/go-scaffold2/pkg/database"
-	pkgexecutor "github.com/rei0721/go-scaffold2/pkg/executor"
-	pkghttpserver "github.com/rei0721/go-scaffold2/pkg/httpserver"
-	pkgi18n "github.com/rei0721/go-scaffold2/pkg/i18n"
-	pkgjwt "github.com/rei0721/go-scaffold2/pkg/jwt"
-	pkglogger "github.com/rei0721/go-scaffold2/pkg/logger"
-	pkgrbac "github.com/rei0721/go-scaffold2/pkg/rbac"
-	pkgstorage "github.com/rei0721/go-scaffold2/pkg/storage"
+	"github.com/rin721/go-scaffold2/internal/config"
+	pkgcache "github.com/rin721/go-scaffold2/pkg/cache"
+	pkgdatabase "github.com/rin721/go-scaffold2/pkg/database"
+	pkgexecutor "github.com/rin721/go-scaffold2/pkg/executor"
+	pkghttpserver "github.com/rin721/go-scaffold2/pkg/httpserver"
+	pkgi18n "github.com/rin721/go-scaffold2/pkg/i18n"
+	pkgjwt "github.com/rin721/go-scaffold2/pkg/jwt"
+	pkglogger "github.com/rin721/go-scaffold2/pkg/logger"
+	pkgrbac "github.com/rin721/go-scaffold2/pkg/rbac"
+	pkgstorage "github.com/rin721/go-scaffold2/pkg/storage"
 )
 
 func toLoggerConfig(cfg config.LoggerConfig) pkglogger.Config {

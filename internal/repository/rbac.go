@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/rei0721/go-scaffold2/internal/models"
+	"github.com/rin721/go-scaffold2/internal/models"
 )
 
 // RoleRepository 定义角色仓储契约。

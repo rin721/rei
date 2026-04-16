@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rei0721/go-scaffold2/internal/config"
+	"github.com/rin721/go-scaffold2/internal/config"
 )
 
 func (a *App) registerReloadHooks() {

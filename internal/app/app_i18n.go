@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	pkgi18n "github.com/rei0721/go-scaffold2/pkg/i18n"
+	pkgi18n "github.com/rin721/go-scaffold2/pkg/i18n"
 )
 
 func (a *App) initI18n() error {

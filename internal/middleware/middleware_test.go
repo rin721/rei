@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	pkgi18n "github.com/rei0721/go-scaffold2/pkg/i18n"
-	pkgjwt "github.com/rei0721/go-scaffold2/pkg/jwt"
-	pkglogger "github.com/rei0721/go-scaffold2/pkg/logger"
-	pkgrbac "github.com/rei0721/go-scaffold2/pkg/rbac"
-	"github.com/rei0721/go-scaffold2/types/constants"
+	pkgi18n "github.com/rin721/go-scaffold2/pkg/i18n"
+	pkgjwt "github.com/rin721/go-scaffold2/pkg/jwt"
+	pkglogger "github.com/rin721/go-scaffold2/pkg/logger"
+	pkgrbac "github.com/rin721/go-scaffold2/pkg/rbac"
+	"github.com/rin721/go-scaffold2/types/constants"
 )
 
 func TestRecoveryReturnsEnvelope(t *testing.T) {

@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	pkgutils "github.com/rei0721/go-scaffold2/pkg/utils"
+	pkgutils "github.com/rin721/go-scaffold2/pkg/utils"
 )
 
 func (a *App) initIDGenerator() error {

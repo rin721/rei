@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/rei0721/go-scaffold2/internal/app"
+	"github.com/rin721/go-scaffold2/internal/app"
 )
 
 func runServer(ctx context.Context, args []string) error {

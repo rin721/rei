@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"github.com/rei0721/go-scaffold2/types"
-	typesuser "github.com/rei0721/go-scaffold2/types/user"
+	"github.com/rin721/go-scaffold2/types"
+	typesuser "github.com/rin721/go-scaffold2/types/user"
 )
 
 // AuthService 定义认证服务契约。

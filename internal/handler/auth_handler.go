@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rei0721/go-scaffold2/internal/service"
-	"github.com/rei0721/go-scaffold2/types/constants"
-	typesuser "github.com/rei0721/go-scaffold2/types/user"
+	"github.com/rin721/go-scaffold2/internal/service"
+	"github.com/rin721/go-scaffold2/types/constants"
+	typesuser "github.com/rin721/go-scaffold2/types/user"
 )
 
 // AuthHandler 负责认证接口绑定与响应。

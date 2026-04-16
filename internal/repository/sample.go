@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/rei0721/go-scaffold2/internal/models"
+	"github.com/rin721/go-scaffold2/internal/models"
 )
 
 // SampleRepository 定义示例模块仓储契约。

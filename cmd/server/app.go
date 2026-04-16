@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/rei0721/go-scaffold2/pkg/cli"
-	"github.com/rei0721/go-scaffold2/types/constants"
+	"github.com/rin721/go-scaffold2/pkg/cli"
+	"github.com/rin721/go-scaffold2/types/constants"
 )
 
 const cliSummary = "phased modular Go backend scaffold"

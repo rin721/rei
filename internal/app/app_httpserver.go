@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	pkghttpserver "github.com/rei0721/go-scaffold2/pkg/httpserver"
+	pkghttpserver "github.com/rin721/go-scaffold2/pkg/httpserver"
 )
 
 func (a *App) initHTTPServer() error {

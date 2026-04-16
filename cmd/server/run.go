@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/rei0721/go-scaffold2/pkg/cli"
+	"github.com/rin721/go-scaffold2/pkg/cli"
 )
 
 func run(args []string) int {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	pkgjwt "github.com/rei0721/go-scaffold2/pkg/jwt"
-	pkgrbac "github.com/rei0721/go-scaffold2/pkg/rbac"
+	pkgjwt "github.com/rin721/go-scaffold2/pkg/jwt"
+	pkgrbac "github.com/rin721/go-scaffold2/pkg/rbac"
 	"gorm.io/gorm"
 )
 

@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	pkglogger "github.com/rei0721/go-scaffold2/pkg/logger"
+	pkglogger "github.com/rin721/go-scaffold2/pkg/logger"
 )
 
 func (a *App) initLogger() error {
