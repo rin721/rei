@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rin721/go-scaffold2/types/constants"
+	"github.com/rin721/rei/types/constants"
 )
 
 var traceCounter atomic.Uint64

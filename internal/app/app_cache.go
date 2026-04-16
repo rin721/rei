@@ -1,6 +1,6 @@
 package app
 
-import pkgcache "github.com/rin721/go-scaffold2/pkg/cache"
+import pkgcache "github.com/rin721/rei/pkg/cache"
 
 func (a *App) initCache() error {
 	if a.cache != nil {

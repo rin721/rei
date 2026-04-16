@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rin721/go-scaffold2/internal/models"
-	"github.com/rin721/go-scaffold2/internal/repository"
-	"github.com/rin721/go-scaffold2/internal/service"
-	"github.com/rin721/go-scaffold2/types"
-	apperrors "github.com/rin721/go-scaffold2/types/errors"
+	"github.com/rin721/rei/internal/models"
+	"github.com/rin721/rei/internal/repository"
+	"github.com/rin721/rei/internal/service"
+	"github.com/rin721/rei/types"
+	apperrors "github.com/rin721/rei/types/errors"
 	"gorm.io/gorm"
 )
 

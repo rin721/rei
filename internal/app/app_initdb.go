@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rin721/go-scaffold2/internal/config"
-	pkgsqlgen "github.com/rin721/go-scaffold2/pkg/sqlgen"
+	"github.com/rin721/rei/internal/config"
+	pkgsqlgen "github.com/rin721/rei/pkg/sqlgen"
 	"gorm.io/gorm"
 )
 

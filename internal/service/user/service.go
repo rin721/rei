@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rin721/go-scaffold2/internal/models"
-	"github.com/rin721/go-scaffold2/internal/repository"
-	apperrors "github.com/rin721/go-scaffold2/types/errors"
-	typesuser "github.com/rin721/go-scaffold2/types/user"
+	"github.com/rin721/rei/internal/models"
+	"github.com/rin721/rei/internal/repository"
+	apperrors "github.com/rin721/rei/types/errors"
+	typesuser "github.com/rin721/rei/types/user"
 )
 
 // Dependencies 描述用户服务依赖。

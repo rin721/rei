@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	apperrors "github.com/rin721/go-scaffold2/types/errors"
+	apperrors "github.com/rin721/rei/types/errors"
 )
 
 func TestSuccess(t *testing.T) {

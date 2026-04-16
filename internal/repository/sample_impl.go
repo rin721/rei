@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 
-	"github.com/rin721/go-scaffold2/internal/models"
-	pkgdbtx "github.com/rin721/go-scaffold2/pkg/dbtx"
+	"github.com/rin721/rei/internal/models"
+	pkgdbtx "github.com/rin721/rei/pkg/dbtx"
 	"gorm.io/gorm"
 )
 

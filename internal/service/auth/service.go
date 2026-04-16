@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rin721/go-scaffold2/internal/models"
-	"github.com/rin721/go-scaffold2/internal/repository"
-	"github.com/rin721/go-scaffold2/internal/service"
-	pkgjwt "github.com/rin721/go-scaffold2/pkg/jwt"
-	apperrors "github.com/rin721/go-scaffold2/types/errors"
-	typesuser "github.com/rin721/go-scaffold2/types/user"
+	"github.com/rin721/rei/internal/models"
+	"github.com/rin721/rei/internal/repository"
+	"github.com/rin721/rei/internal/service"
+	pkgjwt "github.com/rin721/rei/pkg/jwt"
+	apperrors "github.com/rin721/rei/types/errors"
+	typesuser "github.com/rin721/rei/types/user"
 	"gorm.io/gorm"
 )
 

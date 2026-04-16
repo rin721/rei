@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	pkgdbtx "github.com/rin721/go-scaffold2/pkg/dbtx"
+	pkgdbtx "github.com/rin721/rei/pkg/dbtx"
 )
 
 func (a *App) initDBTx() error {

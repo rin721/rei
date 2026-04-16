@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rin721/go-scaffold2/internal/config"
-	pkgdatabase "github.com/rin721/go-scaffold2/pkg/database"
+	"github.com/rin721/rei/internal/config"
+	pkgdatabase "github.com/rin721/rei/pkg/database"
 )
 
 func (a *App) initDatabase(ctx context.Context) error {

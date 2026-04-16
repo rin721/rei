@@ -3,9 +3,9 @@ package app
 import (
 	"net/http"
 
-	"github.com/rin721/go-scaffold2/internal/middleware"
-	"github.com/rin721/go-scaffold2/internal/router"
-	"github.com/rin721/go-scaffold2/types/constants"
+	"github.com/rin721/rei/internal/middleware"
+	"github.com/rin721/rei/internal/router"
+	"github.com/rin721/rei/types/constants"
 )
 
 func (a *App) initRouter() error {

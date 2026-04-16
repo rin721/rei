@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	pkgcrypto "github.com/rin721/go-scaffold2/pkg/crypto"
+	pkgcrypto "github.com/rin721/rei/pkg/crypto"
 )
 
 func (a *App) initCrypto() error {

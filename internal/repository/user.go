@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/rin721/go-scaffold2/internal/models"
+	"github.com/rin721/rei/internal/models"
 )
 
 // UserRepository 定义用户仓储契约。

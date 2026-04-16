@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	apperrors "github.com/rin721/go-scaffold2/types/errors"
+	apperrors "github.com/rin721/rei/types/errors"
 )
 
 // Recovery 捕获 panic 并返回统一错误结构。

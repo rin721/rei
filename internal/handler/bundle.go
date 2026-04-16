@@ -1,6 +1,6 @@
 package handler
 
-import "github.com/rin721/go-scaffold2/internal/service"
+import "github.com/rin721/rei/internal/service"
 
 // Bundle 统一持有业务处理器集合。
 type Bundle struct {

@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	pkgjwt "github.com/rin721/go-scaffold2/pkg/jwt"
+	pkgjwt "github.com/rin721/rei/pkg/jwt"
 )
 
 func (a *App) initJWT() error {

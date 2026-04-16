@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rin721/go-scaffold2/internal/repository"
-	"github.com/rin721/go-scaffold2/types"
+	"github.com/rin721/rei/internal/repository"
+	"github.com/rin721/rei/types"
 )
 
 // Dependencies 描述示例服务依赖。

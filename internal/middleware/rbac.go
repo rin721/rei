@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rin721/go-scaffold2/types/constants"
-	apperrors "github.com/rin721/go-scaffold2/types/errors"
+	"github.com/rin721/rei/types/constants"
+	apperrors "github.com/rin721/rei/types/errors"
 )
 
 // PermissionResolver 用于从请求中解析权限对象和动作。

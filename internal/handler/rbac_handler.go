@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rin721/go-scaffold2/internal/service"
-	"github.com/rin721/go-scaffold2/types"
-	"github.com/rin721/go-scaffold2/types/constants"
+	"github.com/rin721/rei/internal/service"
+	"github.com/rin721/rei/types"
+	"github.com/rin721/rei/types/constants"
 )
 
 // RBACHandler 负责 RBAC 管理接口绑定与响应。

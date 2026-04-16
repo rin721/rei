@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rin721/go-scaffold2/types/constants"
-	apperrors "github.com/rin721/go-scaffold2/types/errors"
-	"github.com/rin721/go-scaffold2/types/result"
+	"github.com/rin721/rei/types/constants"
+	apperrors "github.com/rin721/rei/types/errors"
+	"github.com/rin721/rei/types/result"
 )
 
 func middlewareWriteSuccess(c *gin.Context, status int, data any) {

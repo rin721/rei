@@ -6,15 +6,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/rin721/go-scaffold2/internal/handler"
-	"github.com/rin721/go-scaffold2/internal/models"
-	"github.com/rin721/go-scaffold2/internal/repository"
-	"github.com/rin721/go-scaffold2/internal/router"
-	"github.com/rin721/go-scaffold2/internal/service"
-	authservice "github.com/rin721/go-scaffold2/internal/service/auth"
-	rbacservice "github.com/rin721/go-scaffold2/internal/service/rbac"
-	sampleservice "github.com/rin721/go-scaffold2/internal/service/sample"
-	userservice "github.com/rin721/go-scaffold2/internal/service/user"
+	"github.com/rin721/rei/internal/handler"
+	"github.com/rin721/rei/internal/models"
+	"github.com/rin721/rei/internal/repository"
+	"github.com/rin721/rei/internal/router"
+	"github.com/rin721/rei/internal/service"
+	authservice "github.com/rin721/rei/internal/service/auth"
+	rbacservice "github.com/rin721/rei/internal/service/rbac"
+	sampleservice "github.com/rin721/rei/internal/service/sample"
+	userservice "github.com/rin721/rei/internal/service/user"
 )
 
 func (a *App) initBusiness() error {
