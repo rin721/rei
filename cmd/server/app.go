@@ -14,7 +14,7 @@ func buildCLI() (*cli.App, error) {
 
 	commands := []cli.Command{
 		{
-			Name:        "server",
+			Name:        "run",
 			Description: "start server mode with config loading and app container wiring",
 			Run:         runServer,
 		},

@@ -4,5 +4,5 @@ This directory keeps the scaffold documentation aligned with the current impleme
 
 - `architecture/` explains runtime boundaries and dependency flow.
 - `api/` records routes, response shapes, and HTTP examples.
-- `development/` covers local workflow, `server`, and `initdb`.
+- `development/` covers local workflow, `run`, and `initdb`.
 - `worklogs/` captures phase-by-phase implementation notes.

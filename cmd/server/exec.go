@@ -9,7 +9,7 @@ import (
 )
 
 func runServer(ctx context.Context, args []string) error {
-	fs := flag.NewFlagSet("server", flag.ContinueOnError)
+	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	configPath := fs.String("config", "", "配置文件路径")
 	dryRun := fs.Bool("dry-run", false, "仅初始化并立即退出")
 

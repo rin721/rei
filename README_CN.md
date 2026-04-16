@@ -8,7 +8,7 @@
 - 共享常量、错误体系、统一响应 envelope 与基础契约
 - 可复用的 `pkg/*` 基础设施层
 - `internal/config` 配置加载、环境变量覆盖与热重载
-- `internal/app` 的 `server` / `initdb` 容器装配
+- `internal/app` 的 `run` / `initdb` 容器装配
 - `internal/middleware` 与 `internal/router` 的完整 Web 链路
 - `internal/models`、`internal/repository`、`internal/service`、`internal/handler`
 - 已经打通的 auth、user、rbac、sample 业务模块
@@ -31,7 +31,7 @@ github.com/rei0721/go-scaffold2
 go list ./...
 go test ./...
 go vet ./...
-go run ./cmd/server server --dry-run
+go run ./cmd/server run --dry-run
 go run ./cmd/server initdb --dry-run
 go run ./cmd/server initdb
 go run ./cmd/server
