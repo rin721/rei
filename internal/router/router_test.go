@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	pkgdbtx "github.com/rin721/rei/pkg/dbtx"
 	pkgi18n "github.com/rin721/rei/pkg/i18n"
 	pkgjwt "github.com/rin721/rei/pkg/jwt"
+	pkgmigrate "github.com/rin721/rei/pkg/migrate"
 	pkgrbac "github.com/rin721/rei/pkg/rbac"
 	"github.com/rin721/rei/types/constants"
 	typesuser "github.com/rin721/rei/types/user"
@@ -106,8 +108,10 @@ func TestRouterProtectedRBACRoute(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pkgdbtx.New() returned error: %v", err)
 	}
-	if err := store.DB().AutoMigrate(&models.User{}, &models.Role{}, &models.UserRole{}, &models.Policy{}, &models.Sample{}); err != nil {
-		t.Fatalf("AutoMigrate() returned error: %v", err)
+
+	migrator := pkgmigrate.New(store.DB(), "sqlite", routerTestMigrationsDir(t))
+	if _, err := migrator.Migrate(context.Background(), false); err != nil {
+		t.Fatalf("Migrate() returned error: %v", err)
 	}
 
 	repos := repository.NewSet(store.DB(), dbtxManager)
@@ -248,4 +252,15 @@ func (c *testCache) Set(_ context.Context, key string, value any, _ time.Duratio
 func (c *testCache) Delete(_ context.Context, key string) error {
 	delete(c.values, key)
 	return nil
+}
+
+func routerTestMigrationsDir(t *testing.T) string {
+	t.Helper()
+
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller() failed")
+	}
+
+	return filepath.Join(filepath.Dir(filepath.Dir(filepath.Dir(file))), "scripts", "migrations")
 }

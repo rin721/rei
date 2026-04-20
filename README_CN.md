@@ -1,43 +1,40 @@
-# go-scaffold2
+# rei
 
-`go-scaffold2` 是一个按阶段推进的模块化 Go 后端脚手架，面向中大型 Web 服务场景。
+`rei` 是一个面向中大型 Web 服务的模块化 Go 后端脚手架。
 
-当前仓库已经完成 Phase 0 到 Phase 7：
+## 当前结构
 
-- 根目录骨架、工程文件与安全配置示例
-- 共享常量、错误体系、统一响应 envelope 与基础契约
-- 可复用的 `pkg/*` 基础设施层
-- `internal/config` 配置加载、环境变量覆盖与热重载
-- `internal/app` 的 `run` / `initdb` 容器装配
-- `internal/middleware` 与 `internal/router` 的完整 Web 链路
-- `internal/models`、`internal/repository`、`internal/service`、`internal/handler`
-- 已经打通的 auth、user、rbac、sample 业务模块
-- 可执行的 `initdb` SQL 生成、lock file 保护与同步文档
-- 已完成最终质量收口，并通过 `go test ./...` 与 `go vet ./...`
-
-## 当前阶段
-
-项目目前已经进入 Phase 7 的可验收状态。规划内的运行时、业务主链路和 `initdb` 工作流都已经接通并验证完成。
+- `cmd/` 暴露统一 CLI：`run` 与 `db {generate|migrate|status|rollback}`
+- `internal/config` 负责类型化配置、环境变量覆盖与热重载
+- `internal/app` 负责运行时与数据库管理入口的装配
+- `internal/models`、`internal/repository`、`internal/service`、`internal/handler` 组成当前业务主链路
+- `scripts/migrations/` 是唯一的数据库结构历史来源
 
 ## 模块路径
 
 ```text
-github.com/rei0721/go-scaffold2
+github.com/rin721/rei
 ```
 
-## 快速验证
+## 快速开始
 
 ```bash
 go list ./...
 go test ./...
 go vet ./...
-go run ./cmd/server run --dry-run
-go run ./cmd/server initdb --dry-run
-go run ./cmd/server initdb
-go run ./cmd/server
+go run ./cmd run --dry-run
+go run ./cmd db migrate --dry-run
+go run ./cmd run
 ```
 
-默认示例配置已经切到安全的本地 SQLite，开箱即可运行，不依赖外部数据库。
+默认示例配置使用本地 SQLite，可以在没有外部依赖的情况下完成本地验证。
+
+## 迁移工作流
+
+- 使用 `go run ./cmd db generate --desc <name>` 生成版本化 SQL
+- 在 `scripts/migrations/` 中审阅迁移脚本
+- 使用 `go run ./cmd db migrate` 应用待执行迁移
+- 使用 `go run ./cmd db status` 查看当前迁移状态
 
 ## HTTP 路由
 
@@ -59,17 +56,9 @@ go run ./cmd/server
 - `DELETE /api/v1/rbac/policies`
 - `GET /api/v1/rbac/policies`
 
-## InitDB 输出
-
-运行 `initdb` 后会写入：
-
-- `scripts/initdb/initdb.<driver>.sql`
-- 非 dry-run 成功后额外写入 `scripts/initdb/.initdb.lock`
-
-## 当前约定
+## 说明
 
 - YAML 键统一使用 `snake_case`
 - 环境变量统一使用 `UPPER_SNAKE_CASE`
-- API 响应 envelope 固定为 `code`、`message`、`data`、`traceId`、`serverTime`
-- 示例配置只包含占位符和安全默认值
-- 密码哈希不会出现在任何 JSON 响应中
+- API 响应统一使用 `code`、`message`、`data`、`traceId`、`serverTime`
+- 密码哈希不会出现在 JSON 响应中

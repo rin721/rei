@@ -9,7 +9,7 @@ func (a *App) runModeServer(ctx context.Context) (err error) {
 		return err
 	}
 	defer func() {
-		shutdownErr := a.Shutdown(nil)
+		shutdownErr := a.Shutdown(context.TODO())
 		if err == nil {
 			err = shutdownErr
 		}

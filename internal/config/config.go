@@ -1,8 +1,6 @@
 package config
 
-import (
-	"fmt"
-)
+import "fmt"
 
 type domainConfig interface {
 	ValidateName() string
@@ -10,14 +8,13 @@ type domainConfig interface {
 	Validate() error
 }
 
-// Config 描述应用的顶层配置结构。
+// Config describes the top-level application configuration.
 type Config struct {
 	Server   ServerConfig   `yaml:"server"`
 	Database DatabaseConfig `yaml:"database"`
 	Redis    RedisConfig    `yaml:"redis"`
 	Logger   LoggerConfig   `yaml:"logger"`
 	I18n     I18nConfig     `yaml:"i18n"`
-	InitDB   InitDBConfig   `yaml:"initdb"`
 	Executor ExecutorConfig `yaml:"executor"`
 	JWT      JWTConfig      `yaml:"jwt"`
 	RBAC     RBACConfig     `yaml:"rbac"`
@@ -25,7 +22,6 @@ type Config struct {
 	CORS     CORSConfig     `yaml:"cors"`
 }
 
-// Default 返回一份安全且可运行的默认配置。
 func Default() Config {
 	return Config{
 		Server: ServerConfig{
@@ -37,16 +33,17 @@ func Default() Config {
 			IdleTimeout:  60,
 		},
 		Database: DatabaseConfig{
-			Enabled:      true,
-			Driver:       "sqlite",
-			Host:         "",
-			Port:         0,
-			Name:         "tmp/go_scaffold2.db",
-			User:         "",
-			Password:     "",
-			SSLMode:      "disable",
-			MaxOpenConns: 20,
-			MaxIdleConns: 10,
+			Enabled:       true,
+			Driver:        "sqlite",
+			Host:          "",
+			Port:          0,
+			Name:          "tmp/go_scaffold2.db",
+			User:          "",
+			Password:      "",
+			SSLMode:       "disable",
+			MigrationsDir: "scripts/migrations",
+			MaxOpenConns:  20,
+			MaxIdleConns:  10,
 		},
 		Redis: RedisConfig{
 			Enabled: false,
@@ -68,12 +65,6 @@ func Default() Config {
 			DefaultLocale:  "zh-CN",
 			FallbackLocale: "en-US",
 			LocaleDir:      "configs/locales",
-		},
-		InitDB: InitDBConfig{
-			Enabled:   true,
-			Driver:    "sqlite",
-			OutputDir: "scripts/initdb",
-			LockFile:  "scripts/initdb/.initdb.lock",
 		},
 		Executor: ExecutorConfig{
 			Enabled:         true,
@@ -119,7 +110,6 @@ func Default() Config {
 	}
 }
 
-// Clone 返回配置副本，避免热重载时共享切片引用。
 func (c Config) Clone() Config {
 	cloned := c
 	cloned.CORS.AllowOrigins = append([]string(nil), c.CORS.AllowOrigins...)
@@ -128,7 +118,6 @@ func (c Config) Clone() Config {
 	return cloned
 }
 
-// Validate 校验所有配置域。
 func (c Config) Validate() error {
 	domains := []domainConfig{
 		c.Server,
@@ -136,7 +125,6 @@ func (c Config) Validate() error {
 		c.Redis,
 		c.Logger,
 		c.I18n,
-		c.InitDB,
 		c.Executor,
 		c.JWT,
 		c.RBAC,

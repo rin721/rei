@@ -1,8 +1,7 @@
 app_name: go-scaffold2
-cli_usage: Use the server or initdb command to enter the matching runtime mode
-phase_boundary: The repository now implements Phase 0-7 with Web, Auth, User, RBAC, InitDB, and the final quality sweep completed
-initdb_script_generated: InitDB SQL script generated
-initdb_dry_run: InitDB dry-run completed without executing SQL
-initdb_completed: Database initialization completed and the lock file has been written
+cli_usage: Use the run or db command to enter the matching runtime mode
+phase_boundary: The repository now uses a single database migration workflow
+db_migrate_dry_run: Database migration dry-run completed without executing SQL
+db_migrate_completed: Database migration completed
 auth_logout_success: Logout succeeded
 auth_password_changed: Password changed successfully

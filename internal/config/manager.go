@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -10,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ReloadHook 定义配置切换成功前的组件重载钩子。
+// ReloadHook defines a callback that runs before a new config snapshot becomes active.
 type ReloadHook func(context.Context, Config, Config) error
 
 type reloadHookEntry struct {
@@ -18,13 +19,13 @@ type reloadHookEntry struct {
 	fn   ReloadHook
 }
 
-// Options 描述配置管理器选项。
+// Options describes manager setup.
 type Options struct {
 	Path          string
 	WatchInterval time.Duration
 }
 
-// Manager 管理配置加载、覆盖和热重载。
+// Manager loads, validates, and hot-reloads config files.
 type Manager struct {
 	path          string
 	watchInterval time.Duration
@@ -36,7 +37,6 @@ type Manager struct {
 	watcher *Watcher
 }
 
-// NewManager 创建一个新的配置管理器。
 func NewManager(options Options) *Manager {
 	if options.WatchInterval <= 0 {
 		options.WatchInterval = 200 * time.Millisecond
@@ -48,7 +48,6 @@ func NewManager(options Options) *Manager {
 	}
 }
 
-// Load 从文件加载并验证配置。
 func (m *Manager) Load() (Config, error) {
 	cfg, err := m.loadCandidate()
 	if err != nil {
@@ -63,14 +62,12 @@ func (m *Manager) Load() (Config, error) {
 	return cfg.Clone(), nil
 }
 
-// Current 返回当前配置快照。
 func (m *Manager) Current() Config {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.current.Clone()
 }
 
-// RegisterReloadHook 注册一个配置热重载钩子。
 func (m *Manager) RegisterReloadHook(name string, fn ReloadHook) {
 	if fn == nil {
 		return
@@ -84,7 +81,6 @@ func (m *Manager) RegisterReloadHook(name string, fn ReloadHook) {
 	})
 }
 
-// Start 启动配置文件监听。
 func (m *Manager) Start(ctx context.Context) error {
 	m.mu.Lock()
 	if !m.loaded {
@@ -108,7 +104,6 @@ func (m *Manager) Start(ctx context.Context) error {
 	})
 }
 
-// Stop 停止配置文件监听。
 func (m *Manager) Stop() error {
 	m.mu.Lock()
 	watcher := m.watcher
@@ -158,6 +153,9 @@ func (m *Manager) loadCandidate() (Config, error) {
 
 	cfg := Default()
 	content = ExpandEnvPlaceholders(content)
+	if err := rejectLegacySchemaConfig(content); err != nil {
+		return Config{}, err
+	}
 	if err := yaml.Unmarshal(content, &cfg); err != nil {
 		return Config{}, err
 	}
@@ -169,4 +167,30 @@ func (m *Manager) loadCandidate() (Config, error) {
 	}
 
 	return cfg.Clone(), nil
+}
+
+func rejectLegacySchemaConfig(content []byte) error {
+	var node yaml.Node
+	decoder := yaml.NewDecoder(bytes.NewReader(content))
+	if err := decoder.Decode(&node); err != nil {
+		return err
+	}
+
+	if len(node.Content) == 0 {
+		return nil
+	}
+
+	root := node.Content[0]
+	if root.Kind != yaml.MappingNode {
+		return nil
+	}
+
+	for i := 0; i+1 < len(root.Content); i += 2 {
+		key := root.Content[i]
+		if key.Value == "initdb" {
+			return fmt.Errorf("legacy schema config field %q has been removed; use database.migrations_dir with cmd/db instead", key.Value)
+		}
+	}
+
+	return nil
 }

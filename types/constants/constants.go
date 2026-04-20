@@ -3,7 +3,7 @@ package constants
 // 应用级共享常量，供配置、请求链路和响应规范统一复用。
 const (
 	// ApplicationName 是项目的默认应用名。
-	ApplicationName = "go-scaffold2"
+	ApplicationName = "rei"
 	// DefaultLocale 是默认语言。
 	DefaultLocale = "zh-CN"
 	// FallbackLocale 是回退语言。

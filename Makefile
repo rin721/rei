@@ -1,6 +1,6 @@
 GO ?= go
 
-.PHONY: list test vet quality fmt run-server run-server-dry run-initdb run-initdb-dry
+.PHONY: list test vet quality fmt run run-dry db-migrate db-migrate-dry
 
 list:
 	$(GO) list ./...
@@ -16,14 +16,14 @@ quality: test vet
 fmt:
 	$(GO) fmt ./...
 
-run-server:
-	$(GO) run ./cmd/server server
+run:
+	$(GO) run ./cmd run
 
-run-server-dry:
-	$(GO) run ./cmd/server server --dry-run
+run-dry:
+	$(GO) run ./cmd run --dry-run
 
-run-initdb:
-	$(GO) run ./cmd/server initdb
+db-migrate:
+	$(GO) run ./cmd db migrate
 
-run-initdb-dry:
-	$(GO) run ./cmd/server initdb --dry-run
+db-migrate-dry:
+	$(GO) run ./cmd db migrate --dry-run

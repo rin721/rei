@@ -43,16 +43,6 @@ func (a *App) initBusiness() error {
 		return fmt.Errorf("init business: id generator is required")
 	}
 
-	if err := a.database.DB().AutoMigrate(
-		&models.User{},
-		&models.Role{},
-		&models.UserRole{},
-		&models.Policy{},
-		&models.Sample{},
-	); err != nil {
-		return fmt.Errorf("auto migrate business models: %w", err)
-	}
-
 	repos := repository.NewSet(a.database.DB(), a.dbtx)
 	if err := a.seedBusiness(context.Background(), repos); err != nil {
 		return fmt.Errorf("seed business data: %w", err)

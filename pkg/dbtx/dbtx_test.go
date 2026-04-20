@@ -79,8 +79,11 @@ func openTxTestDB(t *testing.T, name string) *gorm.DB {
 		t.Fatalf("gorm.Open() returned error: %v", err)
 	}
 
-	if err := db.AutoMigrate(&txRecord{}); err != nil {
-		t.Fatalf("AutoMigrate() returned error: %v", err)
+	if err := db.Exec(`CREATE TABLE tx_records (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT
+	)`).Error; err != nil {
+		t.Fatalf("CREATE TABLE returned error: %v", err)
 	}
 
 	return db

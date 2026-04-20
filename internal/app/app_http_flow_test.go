@@ -31,6 +31,7 @@ func TestAppHTTPFlowAuthAndUser(t *testing.T) {
 	t.Parallel()
 
 	configPath := writeTestConfig(t)
+	prepareTestSchema(t, configPath)
 	application, err := New(Options{
 		Mode:       ModeServer,
 		ConfigPath: configPath,

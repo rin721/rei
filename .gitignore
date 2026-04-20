@@ -11,4 +11,3 @@ configs/*.local.yaml
 *.local
 *.gomodx.bak
 tmp/
-scripts/initdb/.initdb.lock

@@ -26,6 +26,8 @@ type Options struct {
 	Mode       Mode
 	ConfigPath string
 	DryRun     bool
+	// DBOptions 在 ModeDB 时使用，描述 db 子命令的操作参数。
+	DBOptions DBOptions
 }
 
 // App 负责装配基础设施并管理不同运行模式。
