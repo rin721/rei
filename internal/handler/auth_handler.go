@@ -4,22 +4,22 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rin721/rei/internal/service"
+	authservice "github.com/rin721/rei/internal/service/auth"
 	"github.com/rin721/rei/types/constants"
 	typesuser "github.com/rin721/rei/types/user"
 )
 
-// AuthHandler 负责认证接口绑定与响应。
+// AuthHandler handles authentication HTTP requests.
 type AuthHandler struct {
-	service service.AuthService
+	service authservice.UseCase
 }
 
-// NewAuthHandler 创建认证处理器。
-func NewAuthHandler(svc service.AuthService) *AuthHandler {
+// NewAuthHandler creates an auth handler.
+func NewAuthHandler(svc authservice.UseCase) *AuthHandler {
 	return &AuthHandler{service: svc}
 }
 
-// Register 处理注册请求。
+// Register handles user registration.
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req typesuser.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -27,16 +27,21 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	response, err := h.service.Register(c.Request.Context(), req)
+	response, err := h.service.Register(c.Request.Context(), authservice.RegisterCommand{
+		Username:    req.Username,
+		Password:    req.Password,
+		DisplayName: req.DisplayName,
+		Email:       req.Email,
+	})
 	if err != nil {
 		writeFailure(c, statusFromError(err), err)
 		return
 	}
 
-	writeSuccess(c, http.StatusCreated, response)
+	writeSuccess(c, http.StatusCreated, toAuthResponse(response))
 }
 
-// Login 处理登录请求。
+// Login handles authentication requests.
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req typesuser.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -44,18 +49,23 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	response, err := h.service.Login(c.Request.Context(), req)
+	response, err := h.service.Login(c.Request.Context(), authservice.LoginCommand{
+		Username: req.Username,
+		Password: req.Password,
+	})
 	if err != nil {
 		writeFailure(c, statusFromError(err), err)
 		return
 	}
 
-	writeSuccess(c, http.StatusOK, response)
+	writeSuccess(c, http.StatusOK, toAuthResponse(response))
 }
 
-// Logout 处理登出请求。
+// Logout clears the current session.
 func (h *AuthHandler) Logout(c *gin.Context) {
-	if err := h.service.Logout(c.Request.Context(), c.GetString(constants.ContextKeyUserID)); err != nil {
+	if err := h.service.Logout(c.Request.Context(), authservice.LogoutCommand{
+		UserID: c.GetString(constants.ContextKeyUserID),
+	}); err != nil {
 		writeFailure(c, statusFromError(err), err)
 		return
 	}
@@ -65,7 +75,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	})
 }
 
-// ChangePassword 处理改密请求。
+// ChangePassword updates the current user's password.
 func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	var req typesuser.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -73,7 +83,11 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ChangePassword(c.Request.Context(), c.GetString(constants.ContextKeyUserID), req); err != nil {
+	if err := h.service.ChangePassword(c.Request.Context(), authservice.ChangePasswordCommand{
+		UserID:      c.GetString(constants.ContextKeyUserID),
+		OldPassword: req.OldPassword,
+		NewPassword: req.NewPassword,
+	}); err != nil {
 		writeFailure(c, statusFromError(err), err)
 		return
 	}
@@ -83,7 +97,7 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	})
 }
 
-// Refresh 处理刷新令牌请求。
+// Refresh issues a new token pair from a refresh token.
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	var req typesuser.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -91,11 +105,32 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	response, err := h.service.RefreshToken(c.Request.Context(), req)
+	response, err := h.service.RefreshToken(c.Request.Context(), authservice.RefreshTokenCommand{
+		RefreshToken: req.RefreshToken,
+	})
 	if err != nil {
 		writeFailure(c, statusFromError(err), err)
 		return
 	}
 
-	writeSuccess(c, http.StatusOK, response)
+	writeSuccess(c, http.StatusOK, toAuthResponse(response))
+}
+
+func toAuthResponse(result authservice.Authentication) typesuser.AuthResponse {
+	return typesuser.AuthResponse{
+		User: typesuser.Profile{
+			ID:          result.User.ID,
+			Username:    result.User.Username,
+			DisplayName: result.User.DisplayName,
+			Email:       result.User.Email,
+			Roles:       append([]string(nil), result.User.Roles...),
+			CreatedAt:   result.User.CreatedAt.UTC().Unix(),
+			UpdatedAt:   result.User.UpdatedAt.UTC().Unix(),
+		},
+		Tokens: typesuser.TokenPair{
+			AccessToken:  result.Tokens.AccessToken,
+			RefreshToken: result.Tokens.RefreshToken,
+			TokenType:    result.Tokens.TokenType,
+		},
+	}
 }

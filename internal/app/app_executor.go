@@ -17,11 +17,6 @@ func (a *App) initExecutor() error {
 	}
 
 	a.executor = manager
-	if a.logger != nil {
-		a.logger.SetExecutor(manager)
-	}
-	if a.httpServer != nil {
-		a.httpServer.SetExecutor(manager)
-	}
+	a.syncExecutorBindings()
 	return nil
 }

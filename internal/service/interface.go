@@ -3,39 +3,22 @@ package service
 import (
 	"context"
 
+	authservice "github.com/rin721/rei/internal/service/auth"
+	rbacservice "github.com/rin721/rei/internal/service/rbac"
+	userservice "github.com/rin721/rei/internal/service/user"
 	"github.com/rin721/rei/types"
-	typesuser "github.com/rin721/rei/types/user"
 )
 
-// AuthService 定义认证服务契约。
-type AuthService interface {
-	Register(context.Context, typesuser.RegisterRequest) (typesuser.AuthResponse, error)
-	Login(context.Context, typesuser.LoginRequest) (typesuser.AuthResponse, error)
-	Logout(context.Context, string) error
-	ChangePassword(context.Context, string, typesuser.ChangePasswordRequest) error
-	RefreshToken(context.Context, typesuser.RefreshTokenRequest) (typesuser.AuthResponse, error)
-}
+// AuthService aliases the auth module usecase contract.
+type AuthService = authservice.UseCase
 
-// UserService 定义用户服务契约。
-type UserService interface {
-	GetProfile(context.Context, string) (typesuser.Profile, error)
-	UpdateProfile(context.Context, string, typesuser.UpdateProfileRequest) (typesuser.Profile, error)
-}
+// UserService aliases the user module usecase contract.
+type UserService = userservice.UseCase
 
-// RBACService 定义 RBAC 服务契约。
-type RBACService interface {
-	CheckPermission(context.Context, types.CheckPermissionRequest) (types.CheckPermissionResponse, error)
-	AssignRole(context.Context, types.AssignRoleRequest) error
-	RevokeRole(context.Context, types.RevokeRoleRequest) error
-	GetUserRoles(context.Context, string) (types.UserRolesResponse, error)
-	GetUsersForRole(context.Context, string) (types.RoleUsersResponse, error)
-	AddPolicy(context.Context, types.PolicyRequest) error
-	RemovePolicy(context.Context, types.PolicyRequest) error
-	ListPolicies(context.Context) (types.PoliciesResponse, error)
-	LoadFromStore(context.Context) error
-}
+// RBACService aliases the RBAC module usecase contract.
+type RBACService = rbacservice.UseCase
 
-// SampleService 定义示例模块服务契约。
+// SampleService defines the sample module contract.
 type SampleService interface {
 	List(context.Context) ([]types.SampleItemResponse, error)
 }

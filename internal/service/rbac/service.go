@@ -6,100 +6,101 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rin721/rei/internal/models"
-	"github.com/rin721/rei/internal/repository"
-	"github.com/rin721/rei/internal/service"
-	"github.com/rin721/rei/types"
+	domainrbac "github.com/rin721/rei/internal/domain/rbac"
 	apperrors "github.com/rin721/rei/types/errors"
-	"gorm.io/gorm"
 )
 
-// Dependencies 描述 RBAC 服务依赖。
+const (
+	defaultRoleAdmin = "admin"
+	defaultRoleUser  = "user"
+)
+
+// Dependencies describes the ports required by the RBAC usecase.
 type Dependencies struct {
-	Users       repository.UserRepository
-	Roles       repository.RoleRepository
-	UserRoles   repository.UserRoleRepository
-	Policies    repository.PolicyRepository
-	IDProvider  service.IDProvider
-	Tx          service.TxManager
-	RoleManager service.RoleManager
+	Users      UserLookup
+	Roles      RoleStore
+	RoleBinds  RoleBindingStore
+	Policies   PolicyStore
+	IDProvider IDProvider
+	Tx         TransactionManager
+	Enforcer   Enforcer
 }
 
-// Service 实现 RBAC 业务逻辑。
+// Service implements RBAC application logic.
 type Service struct {
 	deps Dependencies
 }
 
-// New 创建 RBAC 服务。
+// New creates the RBAC usecase.
 func New(deps Dependencies) (*Service, error) {
 	switch {
 	case deps.Users == nil:
-		return nil, fmt.Errorf("users repository is required")
+		return nil, fmt.Errorf("user lookup is required")
 	case deps.Roles == nil:
-		return nil, fmt.Errorf("roles repository is required")
-	case deps.UserRoles == nil:
-		return nil, fmt.Errorf("user roles repository is required")
+		return nil, fmt.Errorf("role store is required")
+	case deps.RoleBinds == nil:
+		return nil, fmt.Errorf("role binding store is required")
 	case deps.Policies == nil:
-		return nil, fmt.Errorf("policies repository is required")
+		return nil, fmt.Errorf("policy store is required")
 	case deps.IDProvider == nil:
 		return nil, fmt.Errorf("id provider is required")
 	case deps.Tx == nil:
-		return nil, fmt.Errorf("tx manager is required")
-	case deps.RoleManager == nil:
-		return nil, fmt.Errorf("role manager is required")
+		return nil, fmt.Errorf("transaction manager is required")
+	case deps.Enforcer == nil:
+		return nil, fmt.Errorf("enforcer is required")
 	}
 
 	return &Service{deps: deps}, nil
 }
 
-// LoadFromStore 将数据库中的角色关系和策略同步到内存 RBAC 管理器。
+// LoadFromStore synchronizes persisted RBAC state into the runtime enforcer.
 func (s *Service) LoadFromStore(ctx context.Context) error {
 	policies, err := s.deps.Policies.List(ctx)
 	if err != nil {
 		return fmt.Errorf("list policies from store: %w", err)
 	}
 	for _, policy := range policies {
-		if err := s.deps.RoleManager.AddPolicy(policy.Subject, policy.Object, policy.Action); err != nil {
-			return fmt.Errorf("load policy into rbac manager: %w", err)
+		if err := s.deps.Enforcer.AddPolicy(policy.Subject, policy.Object, policy.Action); err != nil {
+			return fmt.Errorf("load policy into enforcer: %w", err)
 		}
 	}
 
-	bindings, err := s.deps.UserRoles.List(ctx)
+	bindings, err := s.deps.RoleBinds.List(ctx)
 	if err != nil {
-		return fmt.Errorf("list user roles from store: %w", err)
+		return fmt.Errorf("list role bindings from store: %w", err)
 	}
 	for _, binding := range bindings {
-		if err := s.deps.RoleManager.AssignRole(binding.UserID, binding.RoleName); err != nil {
-			return fmt.Errorf("load role binding into rbac manager: %w", err)
+		if err := s.deps.Enforcer.AssignRole(binding.UserID, binding.RoleName); err != nil {
+			return fmt.Errorf("load role binding into enforcer: %w", err)
 		}
 	}
 
 	return nil
 }
 
-// CheckPermission 检查指定主体是否具备权限。
-func (s *Service) CheckPermission(ctx context.Context, req types.CheckPermissionRequest) (types.CheckPermissionResponse, error) {
-	userID := strings.TrimSpace(req.UserID)
+// CheckPermission checks whether a subject is allowed to perform an action on an object.
+func (s *Service) CheckPermission(ctx context.Context, query CheckPermissionQuery) (CheckPermissionResult, error) {
+	userID := strings.TrimSpace(query.UserID)
 	if userID == "" {
-		return types.CheckPermissionResponse{}, apperrors.BadRequest("userId is required")
+		return CheckPermissionResult{}, apperrors.BadRequest("userId is required")
 	}
 
-	object := strings.TrimSpace(req.Object)
+	object := strings.TrimSpace(query.Object)
 	if object == "" {
-		return types.CheckPermissionResponse{}, apperrors.BadRequest("object is required")
+		return CheckPermissionResult{}, apperrors.BadRequest("object is required")
 	}
 
-	action := strings.TrimSpace(strings.ToLower(req.Action))
+	action := strings.TrimSpace(strings.ToLower(query.Action))
 	if action == "" {
-		return types.CheckPermissionResponse{}, apperrors.BadRequest("action is required")
+		return CheckPermissionResult{}, apperrors.BadRequest("action is required")
 	}
 
-	allowed, err := s.deps.RoleManager.CheckPermission(userID, object, action)
+	allowed, err := s.deps.Enforcer.CheckPermission(userID, object, action)
 	if err != nil {
-		return types.CheckPermissionResponse{}, fmt.Errorf("check permission via rbac manager: %w", err)
+		return CheckPermissionResult{}, fmt.Errorf("check permission via enforcer: %w", err)
 	}
 
-	return types.CheckPermissionResponse{
+	return CheckPermissionResult{
 		Allowed: allowed,
 		UserID:  userID,
 		Object:  object,
@@ -107,10 +108,10 @@ func (s *Service) CheckPermission(ctx context.Context, req types.CheckPermission
 	}, nil
 }
 
-// AssignRole 为指定用户分配角色。
-func (s *Service) AssignRole(ctx context.Context, req types.AssignRoleRequest) error {
-	userID := strings.TrimSpace(req.UserID)
-	roleName := normalizeRole(req.Role)
+// AssignRole assigns a role to a user.
+func (s *Service) AssignRole(ctx context.Context, cmd AssignRoleCommand) error {
+	userID := strings.TrimSpace(cmd.UserID)
+	roleName := normalizeRole(cmd.Role)
 	if userID == "" || roleName == "" {
 		return apperrors.BadRequest("userId and role are required")
 	}
@@ -123,7 +124,7 @@ func (s *Service) AssignRole(ctx context.Context, req types.AssignRoleRequest) e
 		return apperrors.NotFound("user not found")
 	}
 
-	if err := s.deps.Tx.WithTx(ctx, func(txCtx context.Context, _ *gorm.DB) error {
+	if err := s.deps.Tx.WithTx(ctx, func(txCtx context.Context) error {
 		if err := s.ensureRole(txCtx, roleName); err != nil {
 			return err
 		}
@@ -131,10 +132,8 @@ func (s *Service) AssignRole(ctx context.Context, req types.AssignRoleRequest) e
 		if err != nil {
 			return fmt.Errorf("generate user role id: %w", err)
 		}
-		if err := s.deps.UserRoles.Assign(txCtx, &models.UserRole{
-			BaseModel: models.BaseModel{
-				ID: strconv.FormatInt(id, 10),
-			},
+		if err := s.deps.RoleBinds.Assign(txCtx, domainrbac.RoleBinding{
+			ID:       strconv.FormatInt(id, 10),
 			UserID:   userID,
 			RoleName: roleName,
 		}); err != nil {
@@ -145,22 +144,22 @@ func (s *Service) AssignRole(ctx context.Context, req types.AssignRoleRequest) e
 		return err
 	}
 
-	if err := s.deps.RoleManager.AssignRole(userID, roleName); err != nil {
-		return fmt.Errorf("assign role in rbac manager: %w", err)
+	if err := s.deps.Enforcer.AssignRole(userID, roleName); err != nil {
+		return fmt.Errorf("assign role in enforcer: %w", err)
 	}
 	return nil
 }
 
-// RevokeRole 撤销指定用户角色。
-func (s *Service) RevokeRole(ctx context.Context, req types.RevokeRoleRequest) error {
-	userID := strings.TrimSpace(req.UserID)
-	roleName := normalizeRole(req.Role)
+// RevokeRole revokes a role from a user.
+func (s *Service) RevokeRole(ctx context.Context, cmd RevokeRoleCommand) error {
+	userID := strings.TrimSpace(cmd.UserID)
+	roleName := normalizeRole(cmd.Role)
 	if userID == "" || roleName == "" {
 		return apperrors.BadRequest("userId and role are required")
 	}
 
-	if err := s.deps.Tx.WithTx(ctx, func(txCtx context.Context, _ *gorm.DB) error {
-		if err := s.deps.UserRoles.Revoke(txCtx, userID, roleName); err != nil {
+	if err := s.deps.Tx.WithTx(ctx, func(txCtx context.Context) error {
+		if err := s.deps.RoleBinds.Revoke(txCtx, userID, roleName); err != nil {
 			return fmt.Errorf("revoke role in store: %w", err)
 		}
 		return nil
@@ -168,62 +167,62 @@ func (s *Service) RevokeRole(ctx context.Context, req types.RevokeRoleRequest) e
 		return err
 	}
 
-	if err := s.deps.RoleManager.RevokeRole(userID, roleName); err != nil {
-		return fmt.Errorf("revoke role in rbac manager: %w", err)
+	if err := s.deps.Enforcer.RevokeRole(userID, roleName); err != nil {
+		return fmt.Errorf("revoke role in enforcer: %w", err)
 	}
 	return nil
 }
 
-// GetUserRoles 返回用户角色列表。
-func (s *Service) GetUserRoles(ctx context.Context, userID string) (types.UserRolesResponse, error) {
-	userID = strings.TrimSpace(userID)
+// GetUserRoles returns the roles assigned to a user.
+func (s *Service) GetUserRoles(ctx context.Context, query GetUserRolesQuery) (UserRoles, error) {
+	userID := strings.TrimSpace(query.UserID)
 	if userID == "" {
-		return types.UserRolesResponse{}, apperrors.BadRequest("userId is required")
+		return UserRoles{}, apperrors.BadRequest("userId is required")
 	}
 
-	roles, err := s.deps.UserRoles.ListRolesByUser(ctx, userID)
+	roles, err := s.deps.RoleBinds.ListRolesByUser(ctx, userID)
 	if err != nil {
-		return types.UserRolesResponse{}, fmt.Errorf("list user roles from store: %w", err)
+		return UserRoles{}, fmt.Errorf("list user roles from store: %w", err)
 	}
-	return types.UserRolesResponse{
+
+	return UserRoles{
 		UserID: userID,
 		Roles:  roles,
 	}, nil
 }
 
-// GetUsersForRole 返回角色下的用户列表。
-func (s *Service) GetUsersForRole(ctx context.Context, role string) (types.RoleUsersResponse, error) {
-	role = normalizeRole(role)
+// GetUsersForRole returns the users assigned to a role.
+func (s *Service) GetUsersForRole(ctx context.Context, query GetUsersForRoleQuery) (RoleUsers, error) {
+	role := normalizeRole(query.Role)
 	if role == "" {
-		return types.RoleUsersResponse{}, apperrors.BadRequest("role is required")
+		return RoleUsers{}, apperrors.BadRequest("role is required")
 	}
 
-	userIDs, err := s.deps.UserRoles.ListUsersByRole(ctx, role)
+	userIDs, err := s.deps.RoleBinds.ListUsersByRole(ctx, role)
 	if err != nil {
-		return types.RoleUsersResponse{}, fmt.Errorf("list users by role from store: %w", err)
+		return RoleUsers{}, fmt.Errorf("list users by role from store: %w", err)
 	}
-	return types.RoleUsersResponse{
+
+	return RoleUsers{
 		Role:    role,
 		UserIDs: userIDs,
 	}, nil
 }
 
-// AddPolicy 添加一条策略。
-func (s *Service) AddPolicy(ctx context.Context, req types.PolicyRequest) error {
-	subject, object, action, err := validatePolicyRequest(req)
+// AddPolicy adds a policy rule.
+func (s *Service) AddPolicy(ctx context.Context, cmd PolicyCommand) error {
+	subject, object, action, err := validatePolicyCommand(cmd)
 	if err != nil {
 		return err
 	}
 
-	if err := s.deps.Tx.WithTx(ctx, func(txCtx context.Context, _ *gorm.DB) error {
+	if err := s.deps.Tx.WithTx(ctx, func(txCtx context.Context) error {
 		id, genErr := s.deps.IDProvider.NextID()
 		if genErr != nil {
 			return fmt.Errorf("generate policy id: %w", genErr)
 		}
-		if err := s.deps.Policies.Add(txCtx, &models.Policy{
-			BaseModel: models.BaseModel{
-				ID: strconv.FormatInt(id, 10),
-			},
+		if err := s.deps.Policies.Add(txCtx, domainrbac.Policy{
+			ID:      strconv.FormatInt(id, 10),
 			Subject: subject,
 			Object:  object,
 			Action:  action,
@@ -235,20 +234,20 @@ func (s *Service) AddPolicy(ctx context.Context, req types.PolicyRequest) error 
 		return err
 	}
 
-	if err := s.deps.RoleManager.AddPolicy(subject, object, action); err != nil {
-		return fmt.Errorf("add policy in rbac manager: %w", err)
+	if err := s.deps.Enforcer.AddPolicy(subject, object, action); err != nil {
+		return fmt.Errorf("add policy in enforcer: %w", err)
 	}
 	return nil
 }
 
-// RemovePolicy 删除一条策略。
-func (s *Service) RemovePolicy(ctx context.Context, req types.PolicyRequest) error {
-	subject, object, action, err := validatePolicyRequest(req)
+// RemovePolicy removes a policy rule.
+func (s *Service) RemovePolicy(ctx context.Context, cmd PolicyCommand) error {
+	subject, object, action, err := validatePolicyCommand(cmd)
 	if err != nil {
 		return err
 	}
 
-	if err := s.deps.Tx.WithTx(ctx, func(txCtx context.Context, _ *gorm.DB) error {
+	if err := s.deps.Tx.WithTx(ctx, func(txCtx context.Context) error {
 		if err := s.deps.Policies.Remove(txCtx, subject, object, action); err != nil {
 			return fmt.Errorf("remove policy in store: %w", err)
 		}
@@ -257,29 +256,29 @@ func (s *Service) RemovePolicy(ctx context.Context, req types.PolicyRequest) err
 		return err
 	}
 
-	if err := s.deps.RoleManager.RemovePolicy(subject, object, action); err != nil {
-		return fmt.Errorf("remove policy in rbac manager: %w", err)
+	if err := s.deps.Enforcer.RemovePolicy(subject, object, action); err != nil {
+		return fmt.Errorf("remove policy in enforcer: %w", err)
 	}
 	return nil
 }
 
-// ListPolicies 返回当前策略列表。
-func (s *Service) ListPolicies(ctx context.Context) (types.PoliciesResponse, error) {
+// ListPolicies returns all current policies.
+func (s *Service) ListPolicies(ctx context.Context) (PolicyList, error) {
 	rawPolicies, err := s.deps.Policies.List(ctx)
 	if err != nil {
-		return types.PoliciesResponse{}, fmt.Errorf("list policies from store: %w", err)
+		return PolicyList{}, fmt.Errorf("list policies from store: %w", err)
 	}
 
-	items := make([]types.PolicyRequest, 0, len(rawPolicies))
+	items := make([]PolicyItem, 0, len(rawPolicies))
 	for _, policy := range rawPolicies {
-		items = append(items, types.PolicyRequest{
+		items = append(items, PolicyItem{
 			Subject: policy.Subject,
 			Object:  policy.Object,
 			Action:  policy.Action,
 		})
 	}
 
-	return types.PoliciesResponse{Items: items}, nil
+	return PolicyList{Items: items}, nil
 }
 
 func (s *Service) ensureRole(ctx context.Context, roleName string) error {
@@ -287,19 +286,17 @@ func (s *Service) ensureRole(ctx context.Context, roleName string) error {
 	if err != nil {
 		return fmt.Errorf("generate role id: %w", err)
 	}
-	return s.deps.Roles.Ensure(ctx, &models.Role{
-		BaseModel: models.BaseModel{
-			ID: strconv.FormatInt(id, 10),
-		},
+	return s.deps.Roles.Ensure(ctx, domainrbac.Role{
+		ID:          strconv.FormatInt(id, 10),
 		Name:        roleName,
 		Description: roleDescription(roleName),
 	})
 }
 
-func validatePolicyRequest(req types.PolicyRequest) (string, string, string, error) {
-	subject := normalizeRole(req.Subject)
-	object := strings.TrimSpace(req.Object)
-	action := strings.TrimSpace(strings.ToLower(req.Action))
+func validatePolicyCommand(cmd PolicyCommand) (string, string, string, error) {
+	subject := normalizeRole(cmd.Subject)
+	object := strings.TrimSpace(cmd.Object)
+	action := strings.TrimSpace(strings.ToLower(cmd.Action))
 	if subject == "" || object == "" || action == "" {
 		return "", "", "", apperrors.BadRequest("subject, object and action are required")
 	}
@@ -312,9 +309,9 @@ func normalizeRole(role string) string {
 
 func roleDescription(roleName string) string {
 	switch roleName {
-	case service.DefaultRoleAdmin:
+	case defaultRoleAdmin:
 		return "system administrator"
-	case service.DefaultRoleUser:
+	case defaultRoleUser:
 		return "registered user"
 	default:
 		return "custom role"

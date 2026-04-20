@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,6 +12,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	authadapter "github.com/rin721/rei/internal/adapter/auth"
+	rbacadapter "github.com/rin721/rei/internal/adapter/rbac"
 	"github.com/rin721/rei/internal/handler"
 	"github.com/rin721/rei/internal/middleware"
 	"github.com/rin721/rei/internal/models"
@@ -137,15 +140,23 @@ func TestRouterProtectedRBACRoute(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("Policies.Add(RouteRBACCheck) returned error: %v", err)
 	}
+	if err := repos.Policies.Add(context.Background(), &models.Policy{
+		BaseModel: models.BaseModel{ID: "policy-2"},
+		Subject:   service.DefaultRoleAdmin,
+		Object:    RouteUserMe,
+		Action:    "get",
+	}); err != nil {
+		t.Fatalf("Policies.Add(RouteUserMe) returned error: %v", err)
+	}
 
 	rbacService, err := rbacservice.New(rbacservice.Dependencies{
-		Users:       repos.Users,
-		Roles:       repos.Roles,
-		UserRoles:   repos.UserRoles,
-		Policies:    repos.Policies,
-		IDProvider:  &testIDProvider{next: 100},
-		Tx:          dbtxManager,
-		RoleManager: rbacManager,
+		Users:      rbacadapter.NewUserLookup(repos.Users),
+		Roles:      rbacadapter.NewRoleStore(repos.Roles),
+		RoleBinds:  rbacadapter.NewRoleBindingStore(repos.UserRoles),
+		Policies:   rbacadapter.NewPolicyStore(repos.Policies),
+		IDProvider: &testIDProvider{next: 100},
+		Tx:         rbacadapter.NewTransactionManager(dbtxManager),
+		Enforcer:   rbacadapter.NewEnforcer(rbacManager),
 	})
 	if err != nil {
 		t.Fatalf("rbacservice.New() returned error: %v", err)
@@ -155,14 +166,14 @@ func TestRouterProtectedRBACRoute(t *testing.T) {
 	}
 
 	authService, err := authservice.New(authservice.Dependencies{
-		Users:           repos.Users,
-		Roles:           repos.Roles,
-		UserRoles:       repos.UserRoles,
+		Users:           authadapter.NewUserStore(repos.Users),
+		Roles:           authadapter.NewRoleStore(repos.Roles),
+		RoleBindings:    authadapter.NewRoleBindingStore(repos.UserRoles),
 		IDProvider:      &testIDProvider{next: 1000},
 		Password:        cryptoService,
-		Tokens:          jwtManager,
-		Cache:           newTestCache(),
-		Tx:              dbtxManager,
+		Tokens:          authadapter.NewTokenManager(jwtManager),
+		RefreshTokens:   authadapter.NewRefreshTokenStore(newTestCache()),
+		Tx:              authadapter.NewTransactionManager(dbtxManager),
 		RoleManager:     rbacManager,
 		RefreshTokenTTL: 72 * time.Hour,
 	})
@@ -171,8 +182,8 @@ func TestRouterProtectedRBACRoute(t *testing.T) {
 	}
 
 	userService, err := userservice.New(userservice.Dependencies{
-		Users:     repos.Users,
-		UserRoles: repos.UserRoles,
+		Users:     repository.NewUserDomainStore(repos.Users),
+		UserRoles: repository.NewUserRoleBindingReader(repos.UserRoles),
 	})
 	if err != nil {
 		t.Fatalf("userservice.New() returned error: %v", err)
@@ -185,7 +196,7 @@ func TestRouterProtectedRBACRoute(t *testing.T) {
 		t.Fatalf("sampleservice.New() returned error: %v", err)
 	}
 
-	authResponse, err := authService.Register(context.Background(), typesuser.RegisterRequest{
+	authResponse, err := authService.Register(context.Background(), authservice.RegisterCommand{
 		Username: "admin",
 		Password: "Password123",
 	})
@@ -217,6 +228,29 @@ func TestRouterProtectedRBACRoute(t *testing.T) {
 	}
 	if got := recorder.Header().Get("Content-Language"); got != "en-US" {
 		t.Fatalf("Content-Language = %q, want %q", got, "en-US")
+	}
+
+	userRecorder := httptest.NewRecorder()
+	userRequest := httptest.NewRequest(http.MethodGet, "/api/v1/users/me", nil)
+	userRequest.Header.Set("Authorization", "Bearer "+authResponse.Tokens.AccessToken)
+	engine.ServeHTTP(userRecorder, userRequest)
+
+	if userRecorder.Code != http.StatusOK {
+		t.Fatalf("user status = %d, want %d", userRecorder.Code, http.StatusOK)
+	}
+
+	var userPayload struct {
+		Code int               `json:"code"`
+		Data typesuser.Profile `json:"data"`
+	}
+	if err := json.Unmarshal(userRecorder.Body.Bytes(), &userPayload); err != nil {
+		t.Fatalf("json.Unmarshal(user profile) returned error: %v", err)
+	}
+	if userPayload.Data.Username != "admin" {
+		t.Fatalf("user profile username = %q, want %q", userPayload.Data.Username, "admin")
+	}
+	if len(userPayload.Data.Roles) == 0 {
+		t.Fatal("user profile roles should not be empty")
 	}
 }
 

@@ -1,12 +1,8 @@
 package service
 
 const (
-	// DefaultRoleAdmin 定义系统管理员角色名。
+	// DefaultRoleAdmin defines the system administrator role name.
 	DefaultRoleAdmin = "admin"
-	// DefaultRoleUser 定义普通用户角色名。
+	// DefaultRoleUser defines the default registered-user role name.
 	DefaultRoleUser = "user"
-)
-
-const (
-	refreshTokenCachePrefix = "auth:refresh:"
 )

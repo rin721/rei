@@ -31,46 +31,13 @@ func (a *App) runModeServer(ctx context.Context) (err error) {
 }
 
 func (a *App) bootstrapServer(ctx context.Context) error {
-	if err := a.initLogger(); err != nil {
+	if err := a.bootstrapServerInfrastructure(ctx); err != nil {
 		return err
 	}
-	if err := a.initI18n(); err != nil {
+	if err := a.bootstrapBusinessRuntime(ctx); err != nil {
 		return err
 	}
-	if err := a.initIDGenerator(); err != nil {
-		return err
-	}
-	if err := a.initCache(); err != nil {
-		return err
-	}
-	if err := a.initDatabase(ctx); err != nil {
-		return err
-	}
-	if err := a.initDBTx(); err != nil {
-		return err
-	}
-	if err := a.initExecutor(); err != nil {
-		return err
-	}
-	if err := a.initCrypto(); err != nil {
-		return err
-	}
-	if err := a.initJWT(); err != nil {
-		return err
-	}
-	if err := a.initStorage(); err != nil {
-		return err
-	}
-	if err := a.initRBAC(); err != nil {
-		return err
-	}
-	if err := a.initBusiness(); err != nil {
-		return err
-	}
-	if err := a.initRouter(); err != nil {
-		return err
-	}
-	if err := a.initHTTPServer(); err != nil {
+	if err := a.bootstrapDeliveryRuntime(ctx); err != nil {
 		return err
 	}
 

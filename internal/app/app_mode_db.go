@@ -180,10 +180,7 @@ func (a *App) runDBRollback(ctx context.Context, opts DBOptions) error {
 }
 
 func (a *App) bootstrapDB(ctx context.Context) error {
-	if err := a.initLogger(); err != nil {
-		return err
-	}
-	if err := a.initDatabase(ctx); err != nil {
+	if err := a.bootstrapDBInfrastructure(ctx); err != nil {
 		return err
 	}
 	if a.database == nil {

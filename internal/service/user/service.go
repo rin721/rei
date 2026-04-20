@@ -5,84 +5,86 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rin721/rei/internal/models"
-	"github.com/rin721/rei/internal/repository"
+	domainuser "github.com/rin721/rei/internal/domain/user"
 	apperrors "github.com/rin721/rei/types/errors"
-	typesuser "github.com/rin721/rei/types/user"
 )
 
-// Dependencies 描述用户服务依赖。
+// Dependencies describes the ports required by the user usecase.
 type Dependencies struct {
-	Users     repository.UserRepository
-	UserRoles repository.UserRoleRepository
+	Users     UserStore
+	UserRoles RoleBindingReader
 }
 
-// Service 实现用户资料查询与更新。
+// Service implements user application logic.
 type Service struct {
 	deps Dependencies
 }
 
-// New 创建用户服务。
+// New creates the user usecase.
 func New(deps Dependencies) (*Service, error) {
 	if deps.Users == nil {
-		return nil, fmt.Errorf("users repository is required")
+		return nil, fmt.Errorf("user store is required")
 	}
 	if deps.UserRoles == nil {
-		return nil, fmt.Errorf("user roles repository is required")
+		return nil, fmt.Errorf("role binding reader is required")
 	}
 
 	return &Service{deps: deps}, nil
 }
 
-// GetProfile 返回当前用户资料。
-func (s *Service) GetProfile(ctx context.Context, userID string) (typesuser.Profile, error) {
-	user, err := s.deps.Users.FindByID(ctx, userID)
+// GetProfile returns the current user's profile.
+func (s *Service) GetProfile(ctx context.Context, query GetProfileQuery) (Profile, error) {
+	user, err := s.deps.Users.FindByID(ctx, strings.TrimSpace(query.UserID))
 	if err != nil {
-		return typesuser.Profile{}, fmt.Errorf("find user by id: %w", err)
+		return Profile{}, fmt.Errorf("find user by id: %w", err)
 	}
 	if user == nil {
-		return typesuser.Profile{}, apperrors.NotFound("user not found")
+		return Profile{}, apperrors.NotFound("user not found")
 	}
 
 	return s.buildProfile(ctx, user)
 }
 
-// UpdateProfile 更新当前用户资料。
-func (s *Service) UpdateProfile(ctx context.Context, userID string, req typesuser.UpdateProfileRequest) (typesuser.Profile, error) {
-	user, err := s.deps.Users.FindByID(ctx, userID)
+// UpdateProfile updates the current user's profile.
+func (s *Service) UpdateProfile(ctx context.Context, cmd UpdateProfileCommand) (Profile, error) {
+	user, err := s.deps.Users.FindByID(ctx, strings.TrimSpace(cmd.UserID))
 	if err != nil {
-		return typesuser.Profile{}, fmt.Errorf("find user by id: %w", err)
+		return Profile{}, fmt.Errorf("find user by id: %w", err)
 	}
 	if user == nil {
-		return typesuser.Profile{}, apperrors.NotFound("user not found")
+		return Profile{}, apperrors.NotFound("user not found")
 	}
 
-	displayName := strings.TrimSpace(req.DisplayName)
+	displayName := strings.TrimSpace(cmd.DisplayName)
 	if displayName != "" {
 		user.DisplayName = displayName
 	}
-	user.Email = strings.TrimSpace(strings.ToLower(req.Email))
+	user.Email = normalizeEmail(cmd.Email)
 
 	if err := s.deps.Users.Save(ctx, user); err != nil {
-		return typesuser.Profile{}, fmt.Errorf("save user profile: %w", err)
+		return Profile{}, fmt.Errorf("save user profile: %w", err)
 	}
 
 	return s.buildProfile(ctx, user)
 }
 
-func (s *Service) buildProfile(ctx context.Context, user *models.User) (typesuser.Profile, error) {
+func (s *Service) buildProfile(ctx context.Context, user *domainuser.User) (Profile, error) {
 	roles, err := s.deps.UserRoles.ListRolesByUser(ctx, user.ID)
 	if err != nil {
-		return typesuser.Profile{}, fmt.Errorf("list user roles: %w", err)
+		return Profile{}, fmt.Errorf("list user roles: %w", err)
 	}
 
-	return typesuser.Profile{
+	return Profile{
 		ID:          user.ID,
 		Username:    user.Username,
 		DisplayName: user.DisplayName,
 		Email:       user.Email,
 		Roles:       append([]string(nil), roles...),
-		CreatedAt:   user.CreatedAt.UTC().Unix(),
-		UpdatedAt:   user.UpdatedAt.UTC().Unix(),
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
 	}, nil
+}
+
+func normalizeEmail(value string) string {
+	return strings.TrimSpace(strings.ToLower(value))
 }

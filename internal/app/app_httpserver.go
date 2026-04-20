@@ -12,11 +12,8 @@ func (a *App) initHTTPServer() error {
 	}
 
 	server := pkghttpserver.New(toHTTPServerConfig(a.cfg.Server), a.httpHandler())
-	if a.executor != nil {
-		server.SetExecutor(a.executor)
-	}
-
 	a.httpServer = server
+	a.syncExecutorBindings()
 	if a.logger != nil {
 		a.logger.Info(fmt.Sprintf("http server prepared on %s", a.cfg.Server.Host))
 	}

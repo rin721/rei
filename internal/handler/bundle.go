@@ -1,8 +1,13 @@
 package handler
 
-import "github.com/rin721/rei/internal/service"
+import (
+	"github.com/rin721/rei/internal/service"
+	authservice "github.com/rin721/rei/internal/service/auth"
+	rbacservice "github.com/rin721/rei/internal/service/rbac"
+	userservice "github.com/rin721/rei/internal/service/user"
+)
 
-// Bundle 统一持有业务处理器集合。
+// Bundle groups all HTTP handlers.
 type Bundle struct {
 	Auth   *AuthHandler
 	User   *UserHandler
@@ -10,8 +15,8 @@ type Bundle struct {
 	Sample *SampleHandler
 }
 
-// NewBundle 创建业务处理器集合。
-func NewBundle(authService service.AuthService, userService service.UserService, rbacService service.RBACService, sampleService service.SampleService) *Bundle {
+// NewBundle creates the HTTP handler bundle.
+func NewBundle(authService authservice.UseCase, userService userservice.UseCase, rbacService rbacservice.UseCase, sampleService service.SampleService) *Bundle {
 	return &Bundle{
 		Auth:   NewAuthHandler(authService),
 		User:   NewUserHandler(userService),

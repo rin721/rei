@@ -4,33 +4,35 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rin721/rei/internal/service"
+	userservice "github.com/rin721/rei/internal/service/user"
 	"github.com/rin721/rei/types/constants"
 	typesuser "github.com/rin721/rei/types/user"
 )
 
-// UserHandler 负责用户资料接口绑定与响应。
+// UserHandler handles user profile HTTP requests.
 type UserHandler struct {
-	service service.UserService
+	service userservice.UseCase
 }
 
-// NewUserHandler 创建用户处理器。
-func NewUserHandler(svc service.UserService) *UserHandler {
+// NewUserHandler creates a user handler.
+func NewUserHandler(svc userservice.UseCase) *UserHandler {
 	return &UserHandler{service: svc}
 }
 
-// GetMe 返回当前登录用户资料。
+// GetMe returns the current user's profile.
 func (h *UserHandler) GetMe(c *gin.Context) {
-	response, err := h.service.GetProfile(c.Request.Context(), c.GetString(constants.ContextKeyUserID))
+	response, err := h.service.GetProfile(c.Request.Context(), userservice.GetProfileQuery{
+		UserID: c.GetString(constants.ContextKeyUserID),
+	})
 	if err != nil {
 		writeFailure(c, statusFromError(err), err)
 		return
 	}
 
-	writeSuccess(c, http.StatusOK, response)
+	writeSuccess(c, http.StatusOK, toUserProfileResponse(response))
 }
 
-// UpdateMe 更新当前登录用户资料。
+// UpdateMe updates the current user's profile.
 func (h *UserHandler) UpdateMe(c *gin.Context) {
 	var req typesuser.UpdateProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -38,11 +40,27 @@ func (h *UserHandler) UpdateMe(c *gin.Context) {
 		return
 	}
 
-	response, err := h.service.UpdateProfile(c.Request.Context(), c.GetString(constants.ContextKeyUserID), req)
+	response, err := h.service.UpdateProfile(c.Request.Context(), userservice.UpdateProfileCommand{
+		UserID:      c.GetString(constants.ContextKeyUserID),
+		DisplayName: req.DisplayName,
+		Email:       req.Email,
+	})
 	if err != nil {
 		writeFailure(c, statusFromError(err), err)
 		return
 	}
 
-	writeSuccess(c, http.StatusOK, response)
+	writeSuccess(c, http.StatusOK, toUserProfileResponse(response))
+}
+
+func toUserProfileResponse(profile userservice.Profile) typesuser.Profile {
+	return typesuser.Profile{
+		ID:          profile.ID,
+		Username:    profile.Username,
+		DisplayName: profile.DisplayName,
+		Email:       profile.Email,
+		Roles:       append([]string(nil), profile.Roles...),
+		CreatedAt:   profile.CreatedAt.UTC().Unix(),
+		UpdatedAt:   profile.UpdatedAt.UTC().Unix(),
+	}
 }

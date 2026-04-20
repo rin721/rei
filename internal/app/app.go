@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -21,16 +20,13 @@ import (
 	pkgutils "github.com/rin721/rei/pkg/utils"
 )
 
-// Options 描述应用容器初始化选项。
 type Options struct {
 	Mode       Mode
 	ConfigPath string
 	DryRun     bool
-	// DBOptions 在 ModeDB 时使用，描述 db 子命令的操作参数。
-	DBOptions DBOptions
+	DBOptions  DBOptions
 }
 
-// App 负责装配基础设施并管理不同运行模式。
 type App struct {
 	options       Options
 	configManager *config.Manager
@@ -52,7 +48,6 @@ type App struct {
 	handlers     *handler.Bundle
 }
 
-// New 创建一个新的应用容器。
 func New(options Options) (*App, error) {
 	options = normalizeOptions(options)
 
@@ -73,61 +68,8 @@ func New(options Options) (*App, error) {
 	}, nil
 }
 
-// Config 返回当前配置快照。
 func (a *App) Config() config.Config {
 	return a.cfg.Clone()
-}
-
-// Shutdown 按稳定顺序释放资源。
-func (a *App) Shutdown(ctx context.Context) error {
-	var errs []error
-	if err := a.configManager.Stop(); err != nil {
-		errs = append(errs, err)
-	}
-
-	if ctx == nil {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(context.Background(), defaultShutdownTimeout)
-		defer cancel()
-	}
-
-	if a.httpServer != nil {
-		if err := a.httpServer.Shutdown(ctx); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if a.storage != nil {
-		if err := a.storage.Close(); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if a.executor != nil {
-		if err := a.executor.Shutdown(ctx); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if a.cache != nil {
-		if err := a.cache.Close(); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if a.database != nil {
-		if err := a.database.Close(); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if a.rbac != nil {
-		if err := a.rbac.Close(); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if a.logger != nil {
-		if err := a.logger.Sync(); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return joinErrors(errs...)
 }
 
 func normalizeOptions(options Options) Options {
