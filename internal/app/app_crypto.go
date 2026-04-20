@@ -6,8 +6,8 @@ import (
 	pkgcrypto "github.com/rin721/rei/pkg/crypto"
 )
 
-func (a *App) initCrypto() error {
-	if a.crypto != nil {
+func (p infrastructureProvisioning) initCrypto() error {
+	if p.infra.crypto != nil {
 		return nil
 	}
 
@@ -16,6 +16,6 @@ func (a *App) initCrypto() error {
 		return fmt.Errorf("init crypto: %w", err)
 	}
 
-	a.crypto = service
+	p.infra.crypto = service
 	return nil
 }

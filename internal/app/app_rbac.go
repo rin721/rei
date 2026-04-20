@@ -6,12 +6,12 @@ import (
 	pkgrbac "github.com/rin721/rei/pkg/rbac"
 )
 
-func (a *App) initRBAC() error {
-	if a.rbac != nil || !a.cfg.RBAC.Enabled {
+func (p infrastructureProvisioning) initRBAC() error {
+	if p.infra.rbac != nil || !p.cfg.RBAC.Enabled {
 		return nil
 	}
 
-	cfg, err := toRBACConfig(a.cfg.RBAC)
+	cfg, err := toRBACConfig(p.cfg.RBAC)
 	if err != nil {
 		return fmt.Errorf("prepare rbac config: %w", err)
 	}
@@ -21,6 +21,6 @@ func (a *App) initRBAC() error {
 		return fmt.Errorf("init rbac: %w", err)
 	}
 
-	a.rbac = manager
+	p.infra.rbac = manager
 	return nil
 }

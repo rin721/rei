@@ -30,19 +30,23 @@ func (a *App) Shutdown(ctx context.Context) error {
 		defer cancel()
 	}
 
-	return runShutdownSteps(ctx, "shutdown runtime", a.shutdownSteps())
+	return a.infrastructureProvisioning().shutdown(ctx)
 }
 
-func (a *App) shutdownSteps() []shutdownStep {
+func (p infrastructureProvisioning) shutdown(ctx context.Context) error {
+	return runShutdownSteps(ctx, "shutdown runtime", p.shutdownSteps())
+}
+
+func (p infrastructureProvisioning) shutdownSteps() []shutdownStep {
 	return []shutdownStep{
-		newShutdownTask("config manager", a.stopConfigManager),
-		newShutdownStep("http server", a.shutdownHTTPServer),
-		newShutdownTask("storage", a.closeStorage),
-		newShutdownStep("executor", a.shutdownExecutor),
-		newShutdownTask("cache", a.closeCache),
-		newShutdownTask("database", a.closeDatabase),
-		newShutdownTask("rbac", a.closeRBAC),
-		newShutdownTask("logger", a.flushLogger),
+		newShutdownTask("config manager", p.stopConfigManager),
+		newShutdownStep("http server", p.shutdownHTTPServer),
+		newShutdownTask("storage", p.closeStorage),
+		newShutdownStep("executor", p.shutdownExecutor),
+		newShutdownTask("cache", p.closeCache),
+		newShutdownTask("database", p.closeDatabase),
+		newShutdownTask("rbac", p.closeRBAC),
+		newShutdownTask("logger", p.flushLogger),
 	}
 }
 
@@ -56,58 +60,60 @@ func runShutdownSteps(ctx context.Context, phase string, steps []shutdownStep) e
 	return joinErrors(errs...)
 }
 
-func (a *App) stopConfigManager() error {
-	if a.configManager == nil {
+func (p infrastructureProvisioning) stopConfigManager() error {
+	if p.configManager == nil {
 		return nil
 	}
-	return a.configManager.Stop()
+	return p.configManager.Stop()
 }
 
-func (a *App) shutdownHTTPServer(ctx context.Context) error {
-	if a.httpServer == nil {
+func (p infrastructureProvisioning) shutdownHTTPServer(ctx context.Context) error {
+	if p.delivery.httpServer == nil {
 		return nil
 	}
-	return a.httpServer.Shutdown(ctx)
+	return p.delivery.httpServer.Shutdown(ctx)
 }
 
-func (a *App) closeStorage() error {
-	if a.storage == nil {
+func (p infrastructureProvisioning) closeStorage() error {
+	if p.infra.storage == nil {
 		return nil
 	}
-	return a.storage.Close()
+	return p.infra.storage.Close()
 }
 
-func (a *App) shutdownExecutor(ctx context.Context) error {
-	if a.executor == nil {
+func (p infrastructureProvisioning) shutdownExecutor(ctx context.Context) error {
+	_ = ctx
+	if p.infra.executor == nil {
 		return nil
 	}
-	return a.executor.Shutdown(ctx)
+	p.infra.executor.Shutdown()
+	return nil
 }
 
-func (a *App) closeCache() error {
-	if a.cache == nil {
+func (p infrastructureProvisioning) closeCache() error {
+	if p.infra.cache == nil {
 		return nil
 	}
-	return a.cache.Close()
+	return p.infra.cache.Close()
 }
 
-func (a *App) closeDatabase() error {
-	if a.database == nil {
+func (p infrastructureProvisioning) closeDatabase() error {
+	if p.infra.database == nil {
 		return nil
 	}
-	return a.database.Close()
+	return p.infra.database.Close()
 }
 
-func (a *App) closeRBAC() error {
-	if a.rbac == nil {
+func (p infrastructureProvisioning) closeRBAC() error {
+	if p.infra.rbac == nil {
 		return nil
 	}
-	return a.rbac.Close()
+	return p.infra.rbac.Close()
 }
 
-func (a *App) flushLogger() error {
-	if a.logger == nil {
+func (p infrastructureProvisioning) flushLogger() error {
+	if p.infra.logger == nil {
 		return nil
 	}
-	return a.logger.Sync()
+	return p.infra.logger.Sync()
 }

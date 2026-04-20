@@ -1,13 +1,38 @@
 package app
 
-func (a *App) syncExecutorBindings() {
-	if a.executor == nil {
+import (
+	"context"
+
+	pkgexecutor "github.com/rin721/rei/pkg/executor"
+	pkghttpserver "github.com/rin721/rei/pkg/httpserver"
+)
+
+const defaultExecutorPoolName pkgexecutor.PoolName = "default"
+
+type executorAsyncSubmitter struct {
+	manager  pkgexecutor.Manager
+	poolName pkgexecutor.PoolName
+}
+
+func newExecutorAsyncSubmitter(manager pkgexecutor.Manager) pkghttpserver.AsyncSubmitter {
+	if manager == nil {
+		return nil
+	}
+
+	return executorAsyncSubmitter{
+		manager:  manager,
+		poolName: defaultExecutorPoolName,
+	}
+}
+
+func (s executorAsyncSubmitter) SubmitDefault(_ context.Context, task func()) error {
+	return s.manager.Execute(s.poolName, task)
+}
+
+func (p infrastructureProvisioning) syncExecutorBindings() {
+	if p.delivery.httpServer == nil {
 		return
 	}
-	if a.logger != nil {
-		a.logger.SetExecutor(a.executor)
-	}
-	if a.httpServer != nil {
-		a.httpServer.SetExecutor(a.executor)
-	}
+
+	p.delivery.httpServer.SetExecutor(newExecutorAsyncSubmitter(p.infra.executor))
 }

@@ -52,6 +52,7 @@ func (r *Router) Setup(cfg middleware.MiddlewareConfig) *gin.Engine {
 
 	api := engine.Group("/api/v1")
 	api.GET("/samples", wrapHandler(bundle.Sample, (*handler.SampleHandler).List))
+	api.GET("/samples/tooling", wrapHandler(bundle.Sample, (*handler.SampleHandler).Tooling))
 
 	authGroup := api.Group("/auth")
 	authGroup.POST("/register", wrapHandler(bundle.Auth, (*handler.AuthHandler).Register))

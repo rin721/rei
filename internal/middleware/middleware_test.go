@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -96,23 +95,16 @@ func TestI18nAndLogger(t *testing.T) {
 		t.Fatalf("WriteFile() returned error: %v", err)
 	}
 
-	i18nManager, err := pkgi18n.New(pkgi18n.Config{
-		DefaultLocale:  "zh-CN",
-		FallbackLocale: "en-US",
-		LocaleDir:      dir,
+	i18nManager, err := pkgi18n.New(&pkgi18n.Config{
+		DefaultLanguage:    "zh-CN",
+		SupportedLanguages: []string{"zh-CN", "en-US"},
+		MessagesDir:        dir,
 	})
 	if err != nil {
 		t.Fatalf("pkgi18n.New() returned error: %v", err)
 	}
 
-	var buffer bytes.Buffer
-	logger, err := pkglogger.New(pkglogger.Config{
-		Level:  "info",
-		Writer: &buffer,
-	})
-	if err != nil {
-		t.Fatalf("pkglogger.New() returned error: %v", err)
-	}
+	logger := &testLogger{}
 
 	engine := gin.New()
 	engine.Use(I18n(MiddlewareConfig{I18n: i18nManager}), TraceID(MiddlewareConfig{}), Logger(MiddlewareConfig{Logger: logger}))
@@ -128,7 +120,35 @@ func TestI18nAndLogger(t *testing.T) {
 	if got := recorder.Header().Get("Content-Language"); got != "en-US" {
 		t.Fatalf("Content-Language = %q, want %q", got, "en-US")
 	}
-	if buffer.Len() == 0 {
+	if len(logger.messages) == 0 {
 		t.Fatal("logger did not write request log")
 	}
+}
+
+type testLogger struct {
+	messages []string
+}
+
+func (l *testLogger) Debug(string, ...interface{}) {}
+
+func (l *testLogger) Info(msg string, _ ...interface{}) {
+	l.messages = append(l.messages, msg)
+}
+
+func (l *testLogger) Warn(string, ...interface{}) {}
+
+func (l *testLogger) Error(string, ...interface{}) {}
+
+func (l *testLogger) Fatal(string, ...interface{}) {}
+
+func (l *testLogger) With(...interface{}) pkglogger.Logger {
+	return l
+}
+
+func (l *testLogger) Sync() error {
+	return nil
+}
+
+func (l *testLogger) Reload(*pkglogger.Config) error {
+	return nil
 }

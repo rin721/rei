@@ -7,7 +7,7 @@ import (
 
 type userModuleProvider struct{}
 
-func (userModuleProvider) Provide(_ *App, repos *repository.Set) (userservice.UseCase, error) {
+func (userModuleProvider) Provide(_ businessProvisioning, repos *repository.Set) (userservice.UseCase, error) {
 	return userservice.New(userservice.Dependencies{
 		Users:     repository.NewUserDomainStore(repos.Users),
 		UserRoles: repository.NewUserRoleBindingReader(repos.UserRoles),

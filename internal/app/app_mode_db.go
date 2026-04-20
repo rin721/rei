@@ -58,8 +58,8 @@ func (a *App) runDBGenerate(_ context.Context, opts DBOptions) error {
 
 	driver := databaseDialect(a.cfg)
 
-	if a.logger != nil {
-		a.logger.Info(fmt.Sprintf("db generate: dialect=%s dir=%s", driver, migrationsDir))
+	if a.infra.logger != nil {
+		a.infra.logger.Info(fmt.Sprintf("db generate: dialect=%s dir=%s", driver, migrationsDir))
 	}
 
 	genOpts := pkgmigrate.GenerateOptions{
@@ -81,8 +81,8 @@ func (a *App) runDBGenerate(_ context.Context, opts DBOptions) error {
 		return fmt.Errorf("db generate failed: %w", err)
 	}
 
-	if a.logger != nil {
-		a.logger.Info(fmt.Sprintf("db generate: scripts written to %s", migrationsDir))
+	if a.infra.logger != nil {
+		a.infra.logger.Info(fmt.Sprintf("db generate: scripts written to %s", migrationsDir))
 	}
 	return nil
 }
@@ -93,7 +93,7 @@ func (a *App) runDBMigrate(ctx context.Context, opts DBOptions) error {
 	}
 	defer func() { _ = a.Shutdown(context.TODO()) }()
 
-	migrator := pkgmigrate.New(a.database.DB(), databaseDialect(a.cfg), databaseMigrationsDir(a.cfg))
+	migrator := pkgmigrate.New(a.infra.database.DB(), databaseDialect(a.cfg), databaseMigrationsDir(a.cfg))
 
 	executed, err := migrator.Migrate(ctx, opts.DryRun)
 	if err != nil {
@@ -121,7 +121,7 @@ func (a *App) runDBStatus(ctx context.Context, _ DBOptions) error {
 	}
 	defer func() { _ = a.Shutdown(context.TODO()) }()
 
-	migrator := pkgmigrate.New(a.database.DB(), databaseDialect(a.cfg), databaseMigrationsDir(a.cfg))
+	migrator := pkgmigrate.New(a.infra.database.DB(), databaseDialect(a.cfg), databaseMigrationsDir(a.cfg))
 
 	status, err := migrator.Status(ctx)
 	if err != nil {
@@ -157,7 +157,7 @@ func (a *App) runDBRollback(ctx context.Context, opts DBOptions) error {
 		steps = 1
 	}
 
-	migrator := pkgmigrate.New(a.database.DB(), databaseDialect(a.cfg), databaseMigrationsDir(a.cfg))
+	migrator := pkgmigrate.New(a.infra.database.DB(), databaseDialect(a.cfg), databaseMigrationsDir(a.cfg))
 
 	rolledBack, err := migrator.Rollback(ctx, steps, opts.DryRun)
 	if err != nil {
@@ -183,7 +183,7 @@ func (a *App) bootstrapDB(ctx context.Context) error {
 	if err := a.bootstrapDBInfrastructure(ctx); err != nil {
 		return err
 	}
-	if a.database == nil {
+	if a.infra.database == nil {
 		return fmt.Errorf("db mode requires database.enabled = true")
 	}
 	return nil

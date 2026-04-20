@@ -1,44 +1,37 @@
 package app
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/rin721/rei/internal/middleware"
 	"github.com/rin721/rei/internal/router"
-	"github.com/rin721/rei/types/constants"
 )
 
 func (a *App) initRouter() error {
-	if a.routerEngine != nil {
-		return nil
-	}
-
-	engine := router.New(a.handlers).Setup(toMiddlewareConfig(a))
-	a.routerEngine = engine
-	return nil
+	return a.deliveryProvisioning().initRouter()
 }
 
 func (a *App) httpHandler() http.Handler {
-	if a.routerEngine != nil {
-		return a.routerEngine
-	}
-	return http.NotFoundHandler()
+	return a.deliveryProvisioning().HTTPHandler()
 }
 
-func toMiddlewareConfig(a *App) middleware.MiddlewareConfig {
-	return middleware.MiddlewareConfig{
-		AppName: constants.ApplicationName,
-		Logger:  a.logger,
-		I18n:    a.i18n,
-		JWT:     a.jwt,
-		RBAC:    a.rbac,
-		CORS: middleware.CORSConfig{
-			Enabled:      a.cfg.CORS.Enabled,
-			AllowOrigins: append([]string(nil), a.cfg.CORS.AllowOrigins...),
-			AllowMethods: append([]string(nil), a.cfg.CORS.AllowMethods...),
-			AllowHeaders: append([]string(nil), a.cfg.CORS.AllowHeaders...),
-		},
-		TraceHeader:  "X-Trace-ID",
-		LocaleHeader: "Accept-Language",
+func (p deliveryProvisioning) bootstrap(ctx context.Context) error {
+	return runBootstrap(ctx, "bootstrap delivery runtime", p.bootstrapSteps())
+}
+
+func (p deliveryProvisioning) bootstrapSteps() []bootstrapStep {
+	return []bootstrapStep{
+		newBootstrapTask("router", p.initRouter),
+		newBootstrapTask("http server", p.initHTTPServer),
 	}
+}
+
+func (p deliveryProvisioning) initRouter() error {
+	if p.runtime != nil && p.runtime.routerEngine != nil {
+		return nil
+	}
+
+	engine := router.New(p.business.handlers).Setup(p.MiddlewareConfig())
+	p.runtime.routerEngine = engine
+	return nil
 }

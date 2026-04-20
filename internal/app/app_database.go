@@ -12,15 +12,15 @@ import (
 	pkgdatabase "github.com/rin721/rei/pkg/database"
 )
 
-func (a *App) initDatabase(ctx context.Context) error {
-	if a.database != nil || !a.cfg.Database.Enabled {
+func (p infrastructureProvisioning) initDatabase(ctx context.Context) error {
+	if p.infra.database != nil || !p.cfg.Database.Enabled {
 		return nil
 	}
-	if err := ensureSQLitePath(a.cfg.Database); err != nil {
+	if err := ensureSQLitePath(p.cfg.Database); err != nil {
 		return fmt.Errorf("prepare sqlite path: %w", err)
 	}
 
-	store, err := pkgdatabase.New(toDatabaseConfig(a.cfg.Database))
+	store, err := pkgdatabase.New(toDatabaseConfig(p.cfg.Database))
 	if err != nil {
 		return fmt.Errorf("init database: %w", err)
 	}
@@ -32,7 +32,7 @@ func (a *App) initDatabase(ctx context.Context) error {
 		return fmt.Errorf("ping database: %w", err)
 	}
 
-	a.database = store
+	p.infra.database = store
 	return nil
 }
 

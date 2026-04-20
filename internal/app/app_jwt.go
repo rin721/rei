@@ -6,16 +6,16 @@ import (
 	pkgjwt "github.com/rin721/rei/pkg/jwt"
 )
 
-func (a *App) initJWT() error {
-	if a.jwt != nil || !a.cfg.JWT.Enabled {
+func (p infrastructureProvisioning) initJWT() error {
+	if p.infra.jwt != nil || !p.cfg.JWT.Enabled {
 		return nil
 	}
 
-	manager, err := pkgjwt.New(toJWTConfig(a.cfg.JWT))
+	manager, err := pkgjwt.New(toJWTConfig(p.cfg.JWT))
 	if err != nil {
 		return fmt.Errorf("init jwt: %w", err)
 	}
 
-	a.jwt = manager
+	p.infra.jwt = manager
 	return nil
 }

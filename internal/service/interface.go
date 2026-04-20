@@ -21,4 +21,5 @@ type RBACService = rbacservice.UseCase
 // SampleService defines the sample module contract.
 type SampleService interface {
 	List(context.Context) ([]types.SampleItemResponse, error)
+	Tooling(context.Context) ([]types.SampleToolkitDemoResponse, error)
 }

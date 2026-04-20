@@ -28,5 +28,6 @@ const (
 	// RouteRBACPolicies 定义策略管理路由。
 	RouteRBACPolicies = "/api/v1/rbac/policies"
 	// RouteSampleList 定义示例模块列表路由。
-	RouteSampleList = "/api/v1/samples"
+	RouteSampleList    = "/api/v1/samples"
+	RouteSampleTooling = "/api/v1/samples/tooling"
 )

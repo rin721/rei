@@ -9,10 +9,10 @@ import (
 
 type runtimeReloader struct {
 	name   string
-	reload func(context.Context, config.Config) error
+	reload func(context.Context) error
 }
 
-func newRuntimeReloader(name string, reload func(context.Context, config.Config) error) runtimeReloader {
+func newRuntimeReloader(name string, reload func(context.Context) error) runtimeReloader {
 	return runtimeReloader{
 		name:   name,
 		reload: reload,
@@ -28,7 +28,7 @@ func (a *App) startReload(ctx context.Context) error {
 }
 
 func (a *App) reloadComponents(ctx context.Context, oldCfg, newCfg config.Config) error {
-	if err := runRuntimeReloaders(ctx, "reload runtime components", newCfg, a.runtimeReloaders()); err != nil {
+	if err := a.infrastructureProvisioningWithConfig(newCfg).reload(ctx); err != nil {
 		return err
 	}
 
@@ -37,86 +37,90 @@ func (a *App) reloadComponents(ctx context.Context, oldCfg, newCfg config.Config
 	return nil
 }
 
-func (a *App) runtimeReloaders() []runtimeReloader {
+func (p infrastructureProvisioning) reload(ctx context.Context) error {
+	return runRuntimeReloaders(ctx, "reload runtime components", p.runtimeReloaders())
+}
+
+func (p infrastructureProvisioning) runtimeReloaders() []runtimeReloader {
 	return []runtimeReloader{
-		newRuntimeReloader("logger", func(_ context.Context, cfg config.Config) error {
-			return a.reloadLogger(cfg)
+		newRuntimeReloader("logger", func(_ context.Context) error {
+			return p.reloadLogger()
 		}),
-		newRuntimeReloader("cache", func(_ context.Context, cfg config.Config) error {
-			return a.reloadCache(cfg)
+		newRuntimeReloader("cache", func(_ context.Context) error {
+			return p.reloadCache()
 		}),
-		newRuntimeReloader("database", func(_ context.Context, cfg config.Config) error {
-			return a.reloadDatabase(cfg)
+		newRuntimeReloader("database", func(_ context.Context) error {
+			return p.reloadDatabase()
 		}),
-		newRuntimeReloader("executor", func(_ context.Context, cfg config.Config) error {
-			return a.reloadExecutor(cfg)
+		newRuntimeReloader("executor", func(_ context.Context) error {
+			return p.reloadExecutor()
 		}),
-		newRuntimeReloader("http server", func(_ context.Context, cfg config.Config) error {
-			return a.reloadHTTPServer(cfg)
+		newRuntimeReloader("http server", func(_ context.Context) error {
+			return p.reloadHTTPServer()
 		}),
-		newRuntimeReloader("storage", func(_ context.Context, cfg config.Config) error {
-			return a.reloadStorage(cfg)
+		newRuntimeReloader("storage", func(_ context.Context) error {
+			return p.reloadStorage()
 		}),
 	}
 }
 
-func runRuntimeReloaders(ctx context.Context, phase string, cfg config.Config, reloaders []runtimeReloader) error {
+func runRuntimeReloaders(ctx context.Context, phase string, reloaders []runtimeReloader) error {
 	for _, reloader := range reloaders {
-		if err := reloader.reload(ctx, cfg); err != nil {
+		if err := reloader.reload(ctx); err != nil {
 			return fmt.Errorf("%s: %s: %w", phase, reloader.name, err)
 		}
 	}
 	return nil
 }
 
-func (a *App) reloadLogger(newCfg config.Config) error {
-	if a.logger == nil {
+func (p infrastructureProvisioning) reloadLogger() error {
+	if p.infra.logger == nil {
 		return nil
 	}
-	return a.logger.Reload(toLoggerConfig(newCfg.Logger))
+	return p.infra.logger.Reload(toLoggerConfig(p.cfg.Logger))
 }
 
-func (a *App) reloadCache(newCfg config.Config) error {
-	if a.cache == nil {
+func (p infrastructureProvisioning) reloadCache() error {
+	if p.infra.cache == nil {
 		return nil
 	}
-	return a.cache.Reload(toCacheConfig(newCfg.Redis))
+	return p.infra.cache.Reload(toCacheConfig(p.cfg.Redis))
 }
 
-func (a *App) reloadDatabase(newCfg config.Config) error {
-	if a.database == nil {
+func (p infrastructureProvisioning) reloadDatabase() error {
+	if p.infra.database == nil {
 		return nil
 	}
-	if !newCfg.Database.Enabled {
+	if !p.cfg.Database.Enabled {
 		return fmt.Errorf("disabling database is not supported once initialized")
 	}
-	return a.database.Reload(toDatabaseConfig(newCfg.Database))
+	return p.infra.database.Reload(toDatabaseConfig(p.cfg.Database))
 }
 
-func (a *App) reloadExecutor(newCfg config.Config) error {
-	if a.executor == nil {
+func (p infrastructureProvisioning) reloadExecutor() error {
+	if p.infra.executor == nil {
 		return nil
 	}
-	if !newCfg.Executor.Enabled {
+	if !p.cfg.Executor.Enabled {
 		return fmt.Errorf("disabling executor is not supported once initialized")
 	}
-	if err := a.executor.Reload(toExecutorConfig(newCfg.Executor)); err != nil {
+	if err := p.infra.executor.Reload(toExecutorConfig(p.cfg.Executor)); err != nil {
 		return err
 	}
-	a.syncExecutorBindings()
+	p.syncExecutorBindings()
 	return nil
 }
 
-func (a *App) reloadHTTPServer(newCfg config.Config) error {
-	if a.httpServer == nil {
+func (p infrastructureProvisioning) reloadHTTPServer() error {
+	if p.delivery.httpServer == nil {
 		return nil
 	}
-	return a.httpServer.Reload(toHTTPServerConfig(newCfg.Server))
+	return p.delivery.httpServer.Reload(toHTTPServerConfig(p.cfg.Server))
 }
 
-func (a *App) reloadStorage(newCfg config.Config) error {
-	if a.storage == nil {
+func (p infrastructureProvisioning) reloadStorage() error {
+	if p.infra.storage == nil {
 		return nil
 	}
-	return a.storage.Reload(toStorageConfig(newCfg.Storage))
+	return p.infra.storage.Reload(context.Background(), toStorageConfig(p.cfg.Storage))
 }

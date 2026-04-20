@@ -18,8 +18,8 @@ type CORSConfig struct {
 // MiddlewareConfig 描述路由层所需的中间件依赖。
 type MiddlewareConfig struct {
 	AppName      string
-	Logger       *pkglogger.Logger
-	I18n         *pkgi18n.Manager
+	Logger       pkglogger.Logger
+	I18n         pkgi18n.I18n
 	JWT          *pkgjwt.Manager
 	RBAC         *pkgrbac.Manager
 	CORS         CORSConfig

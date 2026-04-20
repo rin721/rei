@@ -11,6 +11,7 @@ import (
 // Dependencies 描述示例服务依赖。
 type Dependencies struct {
 	Samples repository.SampleRepository
+	Demos   []ToolkitDemo
 }
 
 // Service 实现示例业务模块。
@@ -22,6 +23,9 @@ type Service struct {
 func New(deps Dependencies) (*Service, error) {
 	if deps.Samples == nil {
 		return nil, fmt.Errorf("samples repository is required")
+	}
+	if len(deps.Demos) == 0 {
+		deps.Demos = DefaultToolkitDemos()
 	}
 	return &Service{deps: deps}, nil
 }
@@ -43,4 +47,18 @@ func (s *Service) List(ctx context.Context) ([]types.SampleItemResponse, error) 
 	}
 
 	return items, nil
+}
+
+// Tooling returns business-facing demo previews for isolated pkg helpers.
+func (s *Service) Tooling(ctx context.Context) ([]types.SampleToolkitDemoResponse, error) {
+	demos := make([]types.SampleToolkitDemoResponse, 0, len(s.deps.Demos))
+	for _, demo := range s.deps.Demos {
+		item, err := demo.Build(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("build %s demo: %w", demo.Module(), err)
+		}
+		demos = append(demos, item)
+	}
+
+	return demos, nil
 }

@@ -14,8 +14,8 @@ func (sampleBusinessSeeder) Name() string {
 	return "sample"
 }
 
-func (sampleBusinessSeeder) Seed(ctx context.Context, a *App, repos *repository.Set) error {
-	sampleID, err := nextBusinessID(a.idGen)
+func (sampleBusinessSeeder) Seed(ctx context.Context, deps businessProvisioning, repos *repository.Set) error {
+	sampleID, err := nextBusinessID(deps.idGen)
 	if err != nil {
 		return fmt.Errorf("generate sample id: %w", err)
 	}

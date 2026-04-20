@@ -19,7 +19,7 @@ func (a *App) runModeServer(ctx context.Context) (err error) {
 		return nil
 	}
 
-	if err := a.httpServer.Start(); err != nil {
+	if err := a.delivery.httpServer.Start(); err != nil {
 		return err
 	}
 	if err := a.startReload(ctx); err != nil {

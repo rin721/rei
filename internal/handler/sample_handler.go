@@ -27,3 +27,14 @@ func (h *SampleHandler) List(c *gin.Context) {
 
 	writeSuccess(c, http.StatusOK, response)
 }
+
+// Tooling returns sample toolkit demos for otherwise isolated pkg helpers.
+func (h *SampleHandler) Tooling(c *gin.Context) {
+	response, err := h.service.Tooling(c.Request.Context())
+	if err != nil {
+		writeFailure(c, statusFromError(err), err)
+		return
+	}
+
+	writeSuccess(c, http.StatusOK, response)
+}

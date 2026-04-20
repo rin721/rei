@@ -8,8 +8,9 @@ import (
 
 type sampleModuleProvider struct{}
 
-func (sampleModuleProvider) Provide(_ *App, repos *repository.Set) (service.SampleService, error) {
+func (sampleModuleProvider) Provide(_ businessProvisioning, repos *repository.Set) (service.SampleService, error) {
 	return sampleservice.New(sampleservice.Dependencies{
 		Samples: repos.Samples,
+		Demos:   sampleservice.DefaultToolkitDemos(),
 	})
 }

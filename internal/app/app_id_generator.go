@@ -6,8 +6,8 @@ import (
 	pkgutils "github.com/rin721/rei/pkg/utils"
 )
 
-func (a *App) initIDGenerator() error {
-	if a.idGen != nil {
+func (p infrastructureProvisioning) initIDGenerator() error {
+	if p.infra.idGen != nil {
 		return nil
 	}
 
@@ -16,6 +16,6 @@ func (a *App) initIDGenerator() error {
 		return fmt.Errorf("init id generator: %w", err)
 	}
 
-	a.idGen = generator
+	p.infra.idGen = generator
 	return nil
 }

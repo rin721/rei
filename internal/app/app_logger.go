@@ -6,16 +6,16 @@ import (
 	pkglogger "github.com/rin721/rei/pkg/logger"
 )
 
-func (a *App) initLogger() error {
-	if a.logger != nil {
+func (p infrastructureProvisioning) initLogger() error {
+	if p.infra.logger != nil {
 		return nil
 	}
 
-	log, err := pkglogger.New(toLoggerConfig(a.cfg.Logger))
+	log, err := pkglogger.New(toLoggerConfig(p.cfg.Logger))
 	if err != nil {
 		return fmt.Errorf("init logger: %w", err)
 	}
 
-	a.logger = log
+	p.infra.logger = log
 	return nil
 }

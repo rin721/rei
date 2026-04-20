@@ -10,15 +10,15 @@ import (
 
 type rbacModuleProvider struct{}
 
-func (rbacModuleProvider) Provide(a *App, repos *repository.Set) (rbacservice.UseCase, error) {
+func (rbacModuleProvider) Provide(deps businessProvisioning, repos *repository.Set) (rbacservice.UseCase, error) {
 	svc, err := rbacservice.New(rbacservice.Dependencies{
 		Users:      rbacadapter.NewUserLookup(repos.Users),
 		Roles:      rbacadapter.NewRoleStore(repos.Roles),
 		RoleBinds:  rbacadapter.NewRoleBindingStore(repos.UserRoles),
 		Policies:   rbacadapter.NewPolicyStore(repos.Policies),
-		IDProvider: a.idGen,
-		Tx:         rbacadapter.NewTransactionManager(a.dbtx),
-		Enforcer:   rbacadapter.NewEnforcer(a.rbac),
+		IDProvider: deps.idGen,
+		Tx:         rbacadapter.NewTransactionManager(deps.dbtx),
+		Enforcer:   rbacadapter.NewEnforcer(deps.rbac),
 	})
 	if err != nil {
 		return nil, err

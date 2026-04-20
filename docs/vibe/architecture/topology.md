@@ -1,6 +1,6 @@
 # Topology
 
-Updated On: 2026-04-20
+Updated On: 2026-04-21
 
 ## Current Topology
 
@@ -64,13 +64,122 @@ flowchart LR
     A --> D["app_runtime_bindings.go<br/>executor binding sync"]
     B --> E["logger/cache/database/executor/http server/storage"]
     C --> F["config manager -> http server -> storage -> executor -> cache -> database -> rbac -> logger"]
-    D --> G["logger"]
     D --> H["http server"]
 ```
 
 - `app.go` now carries state and construction only.
 - Reload and shutdown are no longer embedded as long inline sequences in the main app container file.
 - Cross-resource binding is now localized instead of being repeated in multiple init and reload paths.
+- Executor binding now targets the HTTP server only; logger no longer assumes the removed legacy async hook.
+
+## Core Infrastructure Integration
+
+```mermaid
+flowchart LR
+    A["internal/config/*.go"] --> B["internal/app/config_helpers.go"]
+    B --> C["pkg/logger.Logger"]
+    B --> D["pkg/i18n.I18n"]
+    B --> E["pkg/executor.Manager"]
+    B --> F["pkg/storage.Storage"]
+    E --> G["app_runtime_bindings.go<br/>executorAsyncSubmitter"]
+    G --> H["pkg/httpserver.AsyncSubmitter"]
+    D --> I["internal/middleware/i18n.go"]
+    C --> J["internal/middleware/logger.go<br/>internal/middleware/recovery.go"]
+```
+
+- Compatibility mapping for rewritten infrastructure packages is now isolated in the app composition root.
+- Middleware depends on the new logger and i18n interfaces instead of removed concrete manager types.
+- The HTTP server receives executor capability through an app-owned adapter rather than a direct package-level type match.
+
+## App Runtime Containers
+
+```mermaid
+flowchart LR
+    A["app.go"] --> B["a.infra<br/>infrastructureRuntime"]
+    A --> C["a.business<br/>businessRuntime"]
+    A --> D["a.delivery<br/>deliveryRuntime"]
+    B --> E["logger/i18n/idGen/cache/database/dbtx/executor/crypto/jwt/storage/rbac"]
+    C --> F["handler bundle"]
+    D --> G["router engine"]
+    D --> H["http server"]
+```
+
+- Runtime state is no longer stored as one flat field list on `App`.
+- Infrastructure, business, and delivery concerns now have explicit ownership boundaries inside the app shell.
+- Root-app orchestration still exists, but the state it coordinates is now grouped by runtime role.
+
+## App Provisioning Views
+
+```mermaid
+flowchart LR
+    A["app.go"] --> B["businessProvisioning"]
+    A --> C["deliveryProvisioning"]
+    B --> D["repository set"]
+    B --> E["module providers"]
+    B --> F["business seeders"]
+    C --> G["router setup"]
+    C --> H["http server setup"]
+```
+
+- Module providers and seeders now receive a narrow business assembly surface instead of the full root app object.
+- Delivery assembly now reads from a dedicated delivery view instead of directly traversing root-app runtime state.
+- Root-app knowledge is now more localized at the composition boundary.
+
+## Infrastructure Provisioning
+
+```mermaid
+flowchart LR
+    A["app.go"] --> B["infrastructureProvisioning"]
+    B --> C["server bootstrap steps"]
+    B --> D["db bootstrap steps"]
+    B --> E["runtime reloaders"]
+    B --> F["shutdown steps"]
+    B --> G["logger/i18n/idGen/cache/database/dbtx/executor/crypto/jwt/storage/rbac"]
+```
+
+- Root-app orchestration no longer manually chains the infrastructure helper list.
+- Infrastructure lifecycle registration now lives behind an app-owned provisioning boundary.
+- The infrastructure slice now owns both its long-lived state and the lifecycle sequencing around that state.
+
+## Business And Delivery Bootstrap
+
+```mermaid
+flowchart LR
+    A["app.go"] --> B["businessProvisioning.bootstrap"]
+    A --> C["deliveryProvisioning.bootstrap"]
+    B --> D["Validate"]
+    B --> E["RepositorySet"]
+    B --> F["seeders"]
+    B --> G["module providers"]
+    B --> H["handler bundle"]
+    C --> I["router init"]
+    C --> J["http server init"]
+```
+
+- Business and delivery slices now own their local bootstrap sequences.
+- Root-app orchestration coordinates slices, but no longer spells out those slice-local assembly details.
+- Slice bootstrap is now aligned with slice-owned runtime state.
+
+## Sample Toolkit Demos
+
+```mermaid
+flowchart LR
+    A["GET /api/v1/samples/tooling"] --> B["handler/sample_handler.go"]
+    B --> C["service/sample.Tooling"]
+    C --> D["ToolkitDemo[]"]
+    D --> E["sqlgenToolkitDemo"]
+    D --> F["yaml2goToolkitDemo"]
+    E --> G["pkg/sqlgen"]
+    F --> H["pkg/yaml2go"]
+```
+
+- The sample module now provides business-facing demos for useful pkg helpers that were previously isolated from `internal/`.
+- Current demo-backed packages:
+  - `pkg/sqlgen`
+  - `pkg/yaml2go`
+- Explicitly excluded from business demos:
+  - `pkg/cli*` because it is CLI-only infrastructure
+  - `pkg/i18nold` because it is deprecated legacy code
 
 ## User Vertical Slice
 
@@ -134,7 +243,13 @@ flowchart LR
 - Completed app-layer composition step: module-level providers under `internal/app`
 - Completed app-layer startup step: explicit bootstrap phases and module-owned seeders
 - Completed app-layer lifecycle step: explicit reload/shutdown boundaries and shared runtime bindings
-- Next recommended focus: group long-lived app state into narrower runtime containers for infrastructure, business, and delivery concerns.
+- Completed app-layer state step: runtime containers for infrastructure, business, and delivery concerns
+- Completed app-layer provisioning step: narrow business/delivery views instead of broad root-app coupling
+- Completed app-layer infrastructure step: infrastructure lifecycle orchestration delegated to `infrastructureProvisioning`
+- Completed app-layer slice orchestration step: business and delivery bootstrap delegated to slice-owned provisioning flows
+- Completed platform integration step: rewritten logger/i18n/executor/storage packages are now wired through the current composition root
+- Completed isolated tooling step: sample-module demos now cover `pkg/sqlgen` and `pkg/yaml2go`
+- Next recommended focus: extract slice-local registration for runtime start/reload/shutdown where those paths still cross back through the root app shell.
 
 ## Removed Nodes
 

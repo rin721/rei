@@ -12,19 +12,19 @@ import (
 
 type businessSeeder interface {
 	Name() string
-	Seed(context.Context, *App, *repository.Set) error
+	Seed(context.Context, businessProvisioning, *repository.Set) error
 }
 
-func (a *App) seedBusiness(ctx context.Context, repos *repository.Set) error {
-	for _, seeder := range a.businessSeeders() {
-		if err := seeder.Seed(ctx, a, repos); err != nil {
+func (p businessProvisioning) seed(ctx context.Context, repos *repository.Set) error {
+	for _, seeder := range p.seeders() {
+		if err := seeder.Seed(ctx, p, repos); err != nil {
 			return fmt.Errorf("seed %s data: %w", seeder.Name(), err)
 		}
 	}
 	return nil
 }
 
-func (a *App) businessSeeders() []businessSeeder {
+func (p businessProvisioning) seeders() []businessSeeder {
 	return []businessSeeder{
 		rbacBusinessSeeder{},
 		sampleBusinessSeeder{},

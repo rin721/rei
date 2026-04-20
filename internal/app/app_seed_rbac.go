@@ -16,13 +16,13 @@ func (rbacBusinessSeeder) Name() string {
 	return "rbac"
 }
 
-func (rbacBusinessSeeder) Seed(ctx context.Context, a *App, repos *repository.Set) error {
+func (rbacBusinessSeeder) Seed(ctx context.Context, deps businessProvisioning, repos *repository.Set) error {
 	defaultRoles := []string{
 		service.DefaultRoleAdmin,
 		service.DefaultRoleUser,
 	}
 	for _, roleName := range defaultRoles {
-		id, err := nextBusinessID(a.idGen)
+		id, err := nextBusinessID(deps.idGen)
 		if err != nil {
 			return fmt.Errorf("generate role id: %w", err)
 		}
@@ -56,7 +56,7 @@ func (rbacBusinessSeeder) Seed(ctx context.Context, a *App, repos *repository.Se
 		{service.DefaultRoleUser, router.RouteUserMe, "put"},
 	}
 	for _, item := range defaultPolicies {
-		policy, err := newPolicyModel(a.idGen, item.subject, item.object, item.action)
+		policy, err := newPolicyModel(deps.idGen, item.subject, item.object, item.action)
 		if err != nil {
 			return fmt.Errorf("generate policy model: %w", err)
 		}

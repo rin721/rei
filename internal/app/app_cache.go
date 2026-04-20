@@ -2,11 +2,11 @@ package app
 
 import pkgcache "github.com/rin721/rei/pkg/cache"
 
-func (a *App) initCache() error {
-	if a.cache != nil {
+func (p infrastructureProvisioning) initCache() error {
+	if p.infra.cache != nil {
 		return nil
 	}
 
-	a.cache = pkgcache.New(toCacheConfig(a.cfg.Redis))
+	p.infra.cache = pkgcache.New(toCacheConfig(p.cfg.Redis))
 	return nil
 }

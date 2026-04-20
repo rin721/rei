@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/rin721/rei/internal/config"
@@ -18,18 +19,33 @@ import (
 	pkgstorage "github.com/rin721/rei/pkg/storage"
 )
 
-func toLoggerConfig(cfg config.LoggerConfig) pkglogger.Config {
-	return pkglogger.Config{
-		Level:  cfg.Level,
-		Prefix: "go-scaffold2",
+func toLoggerConfig(cfg config.LoggerConfig) *pkglogger.Config {
+	output := strings.ToLower(strings.TrimSpace(cfg.OutputPath))
+	if output == "" || (output != pkglogger.OutputStdout && output != pkglogger.OutputFile && output != pkglogger.OutputBoth) {
+		output = pkglogger.OutputStdout
+	}
+
+	return &pkglogger.Config{
+		Level:      cfg.Level,
+		Format:     cfg.Format,
+		Output:     output,
+		FilePath:   cfg.Filename,
+		MaxSize:    cfg.MaxSizeMB,
+		MaxBackups: cfg.MaxBackups,
+		MaxAge:     cfg.MaxAgeDays,
 	}
 }
 
-func toI18nConfig(cfg config.I18nConfig) pkgi18n.Config {
-	return pkgi18n.Config{
-		DefaultLocale:  cfg.DefaultLocale,
-		FallbackLocale: cfg.FallbackLocale,
-		LocaleDir:      cfg.LocaleDir,
+func toI18nConfig(cfg config.I18nConfig) *pkgi18n.Config {
+	supported := []string{cfg.DefaultLocale}
+	if cfg.FallbackLocale != "" && cfg.FallbackLocale != cfg.DefaultLocale {
+		supported = append(supported, cfg.FallbackLocale)
+	}
+
+	return &pkgi18n.Config{
+		DefaultLanguage:    cfg.DefaultLocale,
+		SupportedLanguages: supported,
+		MessagesDir:        cfg.LocaleDir,
 	}
 }
 
@@ -49,15 +65,13 @@ func toDatabaseConfig(cfg config.DatabaseConfig) pkgdatabase.Config {
 	}
 }
 
-func toExecutorConfig(cfg config.ExecutorConfig) pkgexecutor.Config {
-	return pkgexecutor.Config{
-		DefaultPool: pkgexecutor.DefaultPoolName,
-		Pools: []pkgexecutor.PoolConfig{
-			{
-				Name:      pkgexecutor.DefaultPoolName,
-				Workers:   cfg.DefaultPoolSize,
-				QueueSize: cfg.DefaultPoolSize,
-			},
+func toExecutorConfig(cfg config.ExecutorConfig) []pkgexecutor.Config {
+	return []pkgexecutor.Config{
+		{
+			Name:        defaultExecutorPoolName,
+			Size:        cfg.DefaultPoolSize,
+			Expiry:      pkgexecutor.DefaultWorkerExpiry,
+			NonBlocking: pkgexecutor.DefaultNonBlocking,
 		},
 	}
 }
@@ -71,9 +85,26 @@ func toJWTConfig(cfg config.JWTConfig) pkgjwt.Config {
 	}
 }
 
-func toStorageConfig(cfg config.StorageConfig) pkgstorage.Config {
-	return pkgstorage.Config{
-		RootDir: cfg.RootDir,
+func toStorageConfig(cfg config.StorageConfig) *pkgstorage.Config {
+	fsType := pkgstorage.FSTypeBasePathFS
+	switch strings.ToLower(strings.TrimSpace(cfg.Driver)) {
+	case "", "local":
+		fsType = pkgstorage.FSTypeBasePathFS
+	case string(pkgstorage.FSTypeOS):
+		fsType = pkgstorage.FSTypeOS
+	case string(pkgstorage.FSTypeMemory):
+		fsType = pkgstorage.FSTypeMemory
+	case string(pkgstorage.FSTypeReadOnly):
+		fsType = pkgstorage.FSTypeReadOnly
+	case string(pkgstorage.FSTypeBasePathFS):
+		fsType = pkgstorage.FSTypeBasePathFS
+	}
+
+	return &pkgstorage.Config{
+		FSType:          fsType,
+		BasePath:        cfg.RootDir,
+		EnableWatch:     cfg.Enabled,
+		WatchBufferSize: 100,
 	}
 }
 

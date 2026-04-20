@@ -6,16 +6,16 @@ import (
 	pkgdbtx "github.com/rin721/rei/pkg/dbtx"
 )
 
-func (a *App) initDBTx() error {
-	if a.dbtx != nil || a.database == nil {
+func (p infrastructureProvisioning) initDBTx() error {
+	if p.infra.dbtx != nil || p.infra.database == nil {
 		return nil
 	}
 
-	manager, err := pkgdbtx.New(a.database.DB())
+	manager, err := pkgdbtx.New(p.infra.database.DB())
 	if err != nil {
 		return fmt.Errorf("init dbtx: %w", err)
 	}
 
-	a.dbtx = manager
+	p.infra.dbtx = manager
 	return nil
 }

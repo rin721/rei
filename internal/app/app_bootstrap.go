@@ -33,37 +33,48 @@ func runBootstrap(ctx context.Context, phase string, steps []bootstrapStep) erro
 }
 
 func (a *App) bootstrapServerInfrastructure(ctx context.Context) error {
-	return runBootstrap(ctx, "bootstrap server infrastructure", []bootstrapStep{
-		newBootstrapTask("logger", a.initLogger),
-		newBootstrapTask("i18n", a.initI18n),
-		newBootstrapTask("id generator", a.initIDGenerator),
-		newBootstrapTask("cache", a.initCache),
-		newBootstrapStep("database", a.initDatabase),
-		newBootstrapTask("database transaction manager", a.initDBTx),
-		newBootstrapTask("executor", a.initExecutor),
-		newBootstrapTask("crypto", a.initCrypto),
-		newBootstrapTask("jwt", a.initJWT),
-		newBootstrapTask("storage", a.initStorage),
-		newBootstrapTask("rbac", a.initRBAC),
-	})
+	return a.infrastructureProvisioning().bootstrapServer(ctx)
 }
 
 func (a *App) bootstrapBusinessRuntime(ctx context.Context) error {
-	return runBootstrap(ctx, "bootstrap business runtime", []bootstrapStep{
-		newBootstrapTask("business modules", a.initBusiness),
-	})
+	return a.businessProvisioning().bootstrap(ctx)
 }
 
 func (a *App) bootstrapDeliveryRuntime(ctx context.Context) error {
-	return runBootstrap(ctx, "bootstrap delivery runtime", []bootstrapStep{
-		newBootstrapTask("router", a.initRouter),
-		newBootstrapTask("http server", a.initHTTPServer),
-	})
+	return a.deliveryProvisioning().bootstrap(ctx)
 }
 
 func (a *App) bootstrapDBInfrastructure(ctx context.Context) error {
-	return runBootstrap(ctx, "bootstrap db infrastructure", []bootstrapStep{
-		newBootstrapTask("logger", a.initLogger),
-		newBootstrapStep("database", a.initDatabase),
-	})
+	return a.infrastructureProvisioning().bootstrapDB(ctx)
+}
+
+func (p infrastructureProvisioning) bootstrapServer(ctx context.Context) error {
+	return runBootstrap(ctx, "bootstrap server infrastructure", p.serverBootstrapSteps())
+}
+
+func (p infrastructureProvisioning) serverBootstrapSteps() []bootstrapStep {
+	return []bootstrapStep{
+		newBootstrapTask("logger", p.initLogger),
+		newBootstrapTask("i18n", p.initI18n),
+		newBootstrapTask("id generator", p.initIDGenerator),
+		newBootstrapTask("cache", p.initCache),
+		newBootstrapStep("database", p.initDatabase),
+		newBootstrapTask("database transaction manager", p.initDBTx),
+		newBootstrapTask("executor", p.initExecutor),
+		newBootstrapTask("crypto", p.initCrypto),
+		newBootstrapTask("jwt", p.initJWT),
+		newBootstrapTask("storage", p.initStorage),
+		newBootstrapTask("rbac", p.initRBAC),
+	}
+}
+
+func (p infrastructureProvisioning) bootstrapDB(ctx context.Context) error {
+	return runBootstrap(ctx, "bootstrap db infrastructure", p.dbBootstrapSteps())
+}
+
+func (p infrastructureProvisioning) dbBootstrapSteps() []bootstrapStep {
+	return []bootstrapStep{
+		newBootstrapTask("logger", p.initLogger),
+		newBootstrapStep("database", p.initDatabase),
+	}
 }

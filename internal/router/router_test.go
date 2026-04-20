@@ -66,10 +66,10 @@ func TestRouterProtectedRBACRoute(t *testing.T) {
 		t.Fatalf("WriteFile() returned error: %v", err)
 	}
 
-	i18nManager, err := pkgi18n.New(pkgi18n.Config{
-		DefaultLocale:  "zh-CN",
-		FallbackLocale: "en-US",
-		LocaleDir:      dir,
+	i18nManager, err := pkgi18n.New(&pkgi18n.Config{
+		DefaultLanguage:    "zh-CN",
+		SupportedLanguages: []string{"zh-CN", "en-US"},
+		MessagesDir:        dir,
 	})
 	if err != nil {
 		t.Fatalf("pkgi18n.New() returned error: %v", err)
@@ -251,6 +251,34 @@ func TestRouterProtectedRBACRoute(t *testing.T) {
 	}
 	if len(userPayload.Data.Roles) == 0 {
 		t.Fatal("user profile roles should not be empty")
+	}
+
+	toolingRecorder := httptest.NewRecorder()
+	toolingRequest := httptest.NewRequest(http.MethodGet, "/api/v1/samples/tooling", nil)
+	engine.ServeHTTP(toolingRecorder, toolingRequest)
+
+	if toolingRecorder.Code != http.StatusOK {
+		t.Fatalf("tooling status = %d, want %d", toolingRecorder.Code, http.StatusOK)
+	}
+
+	var toolingPayload struct {
+		Code int `json:"code"`
+		Data []struct {
+			Module string `json:"module"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(toolingRecorder.Body.Bytes(), &toolingPayload); err != nil {
+		t.Fatalf("json.Unmarshal(tooling payload) returned error: %v", err)
+	}
+	if len(toolingPayload.Data) < 2 {
+		t.Fatalf("tooling demos count = %d, want at least 2", len(toolingPayload.Data))
+	}
+	modules := make(map[string]bool, len(toolingPayload.Data))
+	for _, item := range toolingPayload.Data {
+		modules[item.Module] = true
+	}
+	if !modules["sqlgen"] || !modules["yaml2go"] {
+		t.Fatalf("tooling demos missing expected modules: %#v", modules)
 	}
 }
 
