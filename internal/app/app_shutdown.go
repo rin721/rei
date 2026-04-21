@@ -30,24 +30,30 @@ func (a *App) Shutdown(ctx context.Context) error {
 		defer cancel()
 	}
 
-	return a.infrastructureProvisioning().shutdown(ctx)
+	return joinErrors(
+		a.deliveryProvisioning().shutdown(ctx),
+		a.infrastructureProvisioning().shutdown(ctx),
+	)
 }
 
 func (p infrastructureProvisioning) shutdown(ctx context.Context) error {
-	return runShutdownSteps(ctx, "shutdown runtime", p.shutdownSteps())
+	steps, err := p.shutdownSteps()
+	if err != nil {
+		return err
+	}
+	return runShutdownSteps(ctx, "shutdown infrastructure runtime", steps)
 }
 
-func (p infrastructureProvisioning) shutdownSteps() []shutdownStep {
-	return []shutdownStep{
-		newShutdownTask("config manager", p.stopConfigManager),
-		newShutdownStep("http server", p.shutdownHTTPServer),
-		newShutdownTask("storage", p.closeStorage),
-		newShutdownStep("executor", p.shutdownExecutor),
-		newShutdownTask("cache", p.closeCache),
-		newShutdownTask("database", p.closeDatabase),
-		newShutdownTask("rbac", p.closeRBAC),
-		newShutdownTask("logger", p.flushLogger),
+func (p deliveryProvisioning) shutdown(ctx context.Context) error {
+	steps, err := p.shutdownSteps()
+	if err != nil {
+		return err
 	}
+	return runShutdownSteps(ctx, "shutdown delivery runtime", steps)
+}
+
+func (p infrastructureProvisioning) shutdownSteps() ([]shutdownStep, error) {
+	return p.capabilities().shutdownSteps(infrastructureProfileRuntimeShutdown, p)
 }
 
 func runShutdownSteps(ctx context.Context, phase string, steps []shutdownStep) error {
@@ -67,11 +73,15 @@ func (p infrastructureProvisioning) stopConfigManager() error {
 	return p.configManager.Stop()
 }
 
-func (p infrastructureProvisioning) shutdownHTTPServer(ctx context.Context) error {
-	if p.delivery.httpServer == nil {
+func (p deliveryProvisioning) shutdownSteps() ([]shutdownStep, error) {
+	return p.lifecycle().shutdownSteps(deliveryCapabilityProfileRuntime)
+}
+
+func (p deliveryProvisioning) shutdownHTTPServer(ctx context.Context) error {
+	if p.runtime == nil || p.runtime.httpServer == nil {
 		return nil
 	}
-	return p.delivery.httpServer.Shutdown(ctx)
+	return p.runtime.httpServer.Shutdown(ctx)
 }
 
 func (p infrastructureProvisioning) closeStorage() error {

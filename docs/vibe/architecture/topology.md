@@ -62,15 +62,81 @@ flowchart LR
     A["app.go<br/>app state"] --> B["reload.go<br/>runtime reloader registry"]
     A --> C["app_shutdown.go<br/>named shutdown steps"]
     A --> D["app_runtime_bindings.go<br/>executor binding sync"]
-    B --> E["logger/cache/database/executor/http server/storage"]
-    C --> F["config manager -> http server -> storage -> executor -> cache -> database -> rbac -> logger"]
-    D --> H["http server"]
+    B --> E["infrastructure reloaders"]
+    B --> F["delivery reloaders"]
+    C --> G["delivery shutdown"]
+    C --> H["infrastructure shutdown"]
+    D --> I["http server"]
 ```
 
 - `app.go` now carries state and construction only.
 - Reload and shutdown are no longer embedded as long inline sequences in the main app container file.
 - Cross-resource binding is now localized instead of being repeated in multiple init and reload paths.
 - Executor binding now targets the HTTP server only; logger no longer assumes the removed legacy async hook.
+
+## Slice-Owned Runtime Lifecycle
+
+```mermaid
+flowchart LR
+    A["app_mode_server.go"] --> B["deliveryProvisioning.start"]
+    A --> C["infrastructureProvisioning.startReload"]
+    A --> D["infrastructureProvisioning.registerReloadHooks"]
+    E["reloadComponents"] --> F["infrastructureProvisioning.reload"]
+    E --> G["deliveryProvisioning.reload"]
+    H["App.Shutdown"] --> I["deliveryProvisioning.shutdown"]
+    H --> J["infrastructureProvisioning.shutdown"]
+```
+
+- Delivery now owns HTTP server start, reload, and shutdown.
+- Infrastructure now owns config-reload registration, reload-loop startup, and infrastructure-only reload/shutdown steps.
+- The root app shell now coordinates slice lifecycle rather than executing delivery-local lifecycle details directly.
+
+## Mode Runtime Coordinators
+
+```mermaid
+flowchart LR
+    A["App.Run"] --> B["newModeRuntime()"]
+    B --> C["serverModeRuntime"]
+    B --> D["dbModeRuntime"]
+    C --> E["infra bootstrap"]
+    C --> F["business bootstrap"]
+    C --> G["delivery bootstrap"]
+    C --> H["delivery start"]
+    C --> I["infrastructure reload loop"]
+    D --> J["db bootstrap"]
+    D --> K["generate / migrate / status / rollback"]
+```
+
+- Mode orchestration is now modeled as a first-class runtime object instead of being embedded in root-app mode methods.
+- `App.Run` now selects a mode runtime and delegates execution instead of spelling out mode-specific control flow itself.
+- Server and DB modes now evolve behind their own runtime coordinators.
+
+## Infrastructure Capability Registry
+
+```mermaid
+flowchart LR
+    A["app_infrastructure_capabilities.go"] --> B["capability definitions"]
+    B --> C["phase-scoped dependency metadata"]
+    B --> D["server-bootstrap profile"]
+    B --> E["db-bootstrap profile"]
+    B --> F["runtime-reload profile"]
+    B --> G["runtime-shutdown profile"]
+    C --> H["hook-specific topological ordering"]
+    D --> I["infrastructureProvisioning.bootstrapServer"]
+    E --> J["infrastructureProvisioning.bootstrapDB"]
+    F --> K["infrastructureProvisioning.reload"]
+    G --> L["infrastructureProvisioning.shutdown"]
+    H --> I
+    H --> J
+    H --> K
+    H --> L
+```
+
+- Infrastructure concerns are now defined once as named capabilities and reused across bootstrap, reload, and shutdown.
+- Lifecycle composition now happens through named profiles instead of duplicated hard-coded step arrays.
+- Mode runtimes now consume infrastructure behavior declaratively through profile selection.
+- Capability order is now derived from declared prerequisites, with profile order used only as a deterministic tie-breaker for otherwise independent capabilities.
+- Capability prerequisites are now phase-scoped, so bootstrap, reload, and shutdown each resolve only the dependency graph that belongs to that lifecycle hook.
 
 ## Core Infrastructure Integration
 
@@ -159,6 +225,27 @@ flowchart LR
 - Business and delivery slices now own their local bootstrap sequences.
 - Root-app orchestration coordinates slices, but no longer spells out those slice-local assembly details.
 - Slice bootstrap is now aligned with slice-owned runtime state.
+
+## Business And Delivery Lifecycle Registries
+
+```mermaid
+flowchart LR
+    A["app_slice_lifecycle.go"] --> B["business capability registry"]
+    A --> C["delivery capability registry"]
+    B --> D["business-modules"]
+    C --> E["router"]
+    C --> F["http-server"]
+    A --> G["shared dependency-aware ordering helper"]
+    B --> H["business bootstrap"]
+    C --> I["delivery bootstrap"]
+    C --> J["delivery start"]
+    C --> K["delivery reload"]
+    C --> L["delivery shutdown"]
+```
+
+- `business` and `delivery` now declare named slice capabilities instead of relying on handwritten lifecycle arrays.
+- Delivery runtime behavior is now profile-driven across bootstrap, start, reload, and shutdown.
+- The same dependency-aware ordering kernel now backs infrastructure, business, and delivery lifecycle registries.
 
 ## Sample Toolkit Demos
 
@@ -249,7 +336,13 @@ flowchart LR
 - Completed app-layer slice orchestration step: business and delivery bootstrap delegated to slice-owned provisioning flows
 - Completed platform integration step: rewritten logger/i18n/executor/storage packages are now wired through the current composition root
 - Completed isolated tooling step: sample-module demos now cover `pkg/sqlgen` and `pkg/yaml2go`
-- Next recommended focus: extract slice-local registration for runtime start/reload/shutdown where those paths still cross back through the root app shell.
+- Completed app-layer runtime lifecycle step: delivery and infrastructure now own their own runtime start/reload/shutdown responsibilities
+- Completed app-layer mode runtime step: `ModeServer` and `ModeDB` now execute through dedicated runtime coordinators
+- Completed app-layer infrastructure registry step: infrastructure lifecycle now composes named capabilities through dedicated profiles
+- Completed app-layer capability dependency step: infrastructure lifecycle ordering now derives from declared capability prerequisites
+- Completed app-layer phase-scoped dependency step: infrastructure lifecycle hooks now resolve hook-specific prerequisite graphs
+- Completed app-layer slice lifecycle step: business and delivery now compose runtime behavior through declarative slice capability registries
+- Next recommended focus: move mode execution toward declarative mode plans so runtime coordinators select named slice profiles instead of calling slice lifecycle methods directly.
 
 ## Removed Nodes
 

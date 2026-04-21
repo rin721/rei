@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 )
 
 type Mode string
@@ -17,12 +16,10 @@ func (a *App) Run(ctx context.Context) error {
 		ctx = context.Background()
 	}
 
-	switch a.options.Mode {
-	case ModeServer:
-		return a.runModeServer(ctx)
-	case ModeDB:
-		return a.runModeDB(ctx)
-	default:
-		return fmt.Errorf("unsupported app mode %q", a.options.Mode)
+	runtime, err := a.newModeRuntime()
+	if err != nil {
+		return err
 	}
+
+	return runtime.run(ctx)
 }

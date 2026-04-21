@@ -16,14 +16,15 @@ func (a *App) httpHandler() http.Handler {
 }
 
 func (p deliveryProvisioning) bootstrap(ctx context.Context) error {
-	return runBootstrap(ctx, "bootstrap delivery runtime", p.bootstrapSteps())
+	steps, err := p.bootstrapSteps()
+	if err != nil {
+		return err
+	}
+	return runBootstrap(ctx, "bootstrap delivery runtime", steps)
 }
 
-func (p deliveryProvisioning) bootstrapSteps() []bootstrapStep {
-	return []bootstrapStep{
-		newBootstrapTask("router", p.initRouter),
-		newBootstrapTask("http server", p.initHTTPServer),
-	}
+func (p deliveryProvisioning) bootstrapSteps() ([]bootstrapStep, error) {
+	return p.lifecycle().bootstrapSteps(deliveryCapabilityProfileRuntime)
 }
 
 func (p deliveryProvisioning) initRouter() error {

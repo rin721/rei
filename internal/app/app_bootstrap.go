@@ -32,49 +32,18 @@ func runBootstrap(ctx context.Context, phase string, steps []bootstrapStep) erro
 	return nil
 }
 
-func (a *App) bootstrapServerInfrastructure(ctx context.Context) error {
-	return a.infrastructureProvisioning().bootstrapServer(ctx)
-}
-
-func (a *App) bootstrapBusinessRuntime(ctx context.Context) error {
-	return a.businessProvisioning().bootstrap(ctx)
-}
-
-func (a *App) bootstrapDeliveryRuntime(ctx context.Context) error {
-	return a.deliveryProvisioning().bootstrap(ctx)
-}
-
-func (a *App) bootstrapDBInfrastructure(ctx context.Context) error {
-	return a.infrastructureProvisioning().bootstrapDB(ctx)
-}
-
 func (p infrastructureProvisioning) bootstrapServer(ctx context.Context) error {
-	return runBootstrap(ctx, "bootstrap server infrastructure", p.serverBootstrapSteps())
-}
-
-func (p infrastructureProvisioning) serverBootstrapSteps() []bootstrapStep {
-	return []bootstrapStep{
-		newBootstrapTask("logger", p.initLogger),
-		newBootstrapTask("i18n", p.initI18n),
-		newBootstrapTask("id generator", p.initIDGenerator),
-		newBootstrapTask("cache", p.initCache),
-		newBootstrapStep("database", p.initDatabase),
-		newBootstrapTask("database transaction manager", p.initDBTx),
-		newBootstrapTask("executor", p.initExecutor),
-		newBootstrapTask("crypto", p.initCrypto),
-		newBootstrapTask("jwt", p.initJWT),
-		newBootstrapTask("storage", p.initStorage),
-		newBootstrapTask("rbac", p.initRBAC),
+	steps, err := p.capabilities().bootstrapSteps(infrastructureProfileServerBootstrap, p)
+	if err != nil {
+		return err
 	}
+	return runBootstrap(ctx, "bootstrap server infrastructure", steps)
 }
 
 func (p infrastructureProvisioning) bootstrapDB(ctx context.Context) error {
-	return runBootstrap(ctx, "bootstrap db infrastructure", p.dbBootstrapSteps())
-}
-
-func (p infrastructureProvisioning) dbBootstrapSteps() []bootstrapStep {
-	return []bootstrapStep{
-		newBootstrapTask("logger", p.initLogger),
-		newBootstrapStep("database", p.initDatabase),
+	steps, err := p.capabilities().bootstrapSteps(infrastructureProfileDBBootstrap, p)
+	if err != nil {
+		return err
 	}
+	return runBootstrap(ctx, "bootstrap db infrastructure", steps)
 }

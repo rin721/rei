@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
 	pkghttpserver "github.com/rin721/rei/pkg/httpserver"
@@ -25,4 +26,20 @@ func (p deliveryProvisioning) initHTTPServer() error {
 	}
 
 	return nil
+}
+
+func (p deliveryProvisioning) start(ctx context.Context) error {
+	starters, err := p.lifecycle().starters(deliveryCapabilityProfileRuntime)
+	if err != nil {
+		return err
+	}
+	return runRuntimeStarters(ctx, "start delivery runtime", starters)
+}
+
+func (p deliveryProvisioning) startHTTPServer(ctx context.Context) error {
+	_ = ctx
+	if p.runtime == nil || p.runtime.httpServer == nil {
+		return fmt.Errorf("http server is not initialized")
+	}
+	return p.runtime.httpServer.Start()
 }

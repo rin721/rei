@@ -19,16 +19,25 @@ func newRuntimeReloader(name string, reload func(context.Context) error) runtime
 	}
 }
 
-func (a *App) registerReloadHooks() {
-	a.configManager.RegisterReloadHook("app", a.reloadComponents)
+func (p infrastructureProvisioning) registerReloadHooks(reload func(context.Context, config.Config, config.Config) error) {
+	if p.configManager == nil {
+		return
+	}
+	p.configManager.RegisterReloadHook("app", reload)
 }
 
-func (a *App) startReload(ctx context.Context) error {
-	return a.configManager.Start(ctx)
+func (p infrastructureProvisioning) startReload(ctx context.Context) error {
+	if p.configManager == nil {
+		return nil
+	}
+	return p.configManager.Start(ctx)
 }
 
 func (a *App) reloadComponents(ctx context.Context, oldCfg, newCfg config.Config) error {
 	if err := a.infrastructureProvisioningWithConfig(newCfg).reload(ctx); err != nil {
+		return err
+	}
+	if err := a.deliveryProvisioningWithConfig(newCfg).reload(ctx); err != nil {
 		return err
 	}
 
@@ -38,30 +47,15 @@ func (a *App) reloadComponents(ctx context.Context, oldCfg, newCfg config.Config
 }
 
 func (p infrastructureProvisioning) reload(ctx context.Context) error {
-	return runRuntimeReloaders(ctx, "reload runtime components", p.runtimeReloaders())
+	reloaders, err := p.runtimeReloaders()
+	if err != nil {
+		return err
+	}
+	return runRuntimeReloaders(ctx, "reload runtime components", reloaders)
 }
 
-func (p infrastructureProvisioning) runtimeReloaders() []runtimeReloader {
-	return []runtimeReloader{
-		newRuntimeReloader("logger", func(_ context.Context) error {
-			return p.reloadLogger()
-		}),
-		newRuntimeReloader("cache", func(_ context.Context) error {
-			return p.reloadCache()
-		}),
-		newRuntimeReloader("database", func(_ context.Context) error {
-			return p.reloadDatabase()
-		}),
-		newRuntimeReloader("executor", func(_ context.Context) error {
-			return p.reloadExecutor()
-		}),
-		newRuntimeReloader("http server", func(_ context.Context) error {
-			return p.reloadHTTPServer()
-		}),
-		newRuntimeReloader("storage", func(_ context.Context) error {
-			return p.reloadStorage()
-		}),
-	}
+func (p infrastructureProvisioning) runtimeReloaders() ([]runtimeReloader, error) {
+	return p.capabilities().reloaders(infrastructureProfileRuntimeReload, p)
 }
 
 func runRuntimeReloaders(ctx context.Context, phase string, reloaders []runtimeReloader) error {
@@ -111,16 +105,31 @@ func (p infrastructureProvisioning) reloadExecutor() error {
 	return nil
 }
 
-func (p infrastructureProvisioning) reloadHTTPServer() error {
-	if p.delivery.httpServer == nil {
-		return nil
+func (p deliveryProvisioning) reload(ctx context.Context) error {
+	reloaders, err := p.runtimeReloaders()
+	if err != nil {
+		return err
 	}
-	return p.delivery.httpServer.Reload(toHTTPServerConfig(p.cfg.Server))
+	return runRuntimeReloaders(ctx, "reload delivery runtime", reloaders)
 }
 
-func (p infrastructureProvisioning) reloadStorage() error {
+func (p deliveryProvisioning) runtimeReloaders() ([]runtimeReloader, error) {
+	return p.lifecycle().reloaders(deliveryCapabilityProfileRuntime)
+}
+
+func (p deliveryProvisioning) reloadHTTPServer() error {
+	if p.runtime == nil || p.runtime.httpServer == nil {
+		return nil
+	}
+	return p.runtime.httpServer.Reload(p.serverConfig)
+}
+
+func (p infrastructureProvisioning) reloadStorage(ctx context.Context) error {
 	if p.infra.storage == nil {
 		return nil
 	}
-	return p.infra.storage.Reload(context.Background(), toStorageConfig(p.cfg.Storage))
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return p.infra.storage.Reload(ctx, toStorageConfig(p.cfg.Storage))
 }

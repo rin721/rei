@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/rin721/rei/internal/config"
 	"github.com/rin721/rei/internal/middleware"
 	"github.com/rin721/rei/internal/repository"
 	pkgcache "github.com/rin721/rei/pkg/cache"
@@ -88,6 +89,10 @@ type deliveryProvisioning struct {
 }
 
 func (a *App) deliveryProvisioning() deliveryProvisioning {
+	return a.deliveryProvisioningWithConfig(a.cfg)
+}
+
+func (a *App) deliveryProvisioningWithConfig(cfg config.Config) deliveryProvisioning {
 	return deliveryProvisioning{
 		business:     &a.business,
 		runtime:      &a.delivery,
@@ -96,12 +101,12 @@ func (a *App) deliveryProvisioning() deliveryProvisioning {
 		jwt:          a.infra.jwt,
 		rbac:         a.infra.rbac,
 		executor:     newExecutorAsyncSubmitter(a.infra.executor),
-		serverConfig: toHTTPServerConfig(a.cfg.Server),
+		serverConfig: toHTTPServerConfig(cfg.Server),
 		cors: middleware.CORSConfig{
-			Enabled:      a.cfg.CORS.Enabled,
-			AllowOrigins: append([]string(nil), a.cfg.CORS.AllowOrigins...),
-			AllowMethods: append([]string(nil), a.cfg.CORS.AllowMethods...),
-			AllowHeaders: append([]string(nil), a.cfg.CORS.AllowHeaders...),
+			Enabled:      cfg.CORS.Enabled,
+			AllowOrigins: append([]string(nil), cfg.CORS.AllowOrigins...),
+			AllowMethods: append([]string(nil), cfg.CORS.AllowMethods...),
+			AllowHeaders: append([]string(nil), cfg.CORS.AllowHeaders...),
 		},
 	}
 }

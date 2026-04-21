@@ -10,13 +10,15 @@ func (a *App) initBusiness() error {
 }
 
 func (p businessProvisioning) bootstrap(ctx context.Context) error {
-	return runBootstrap(ctx, "bootstrap business runtime", p.bootstrapSteps())
+	steps, err := p.bootstrapSteps()
+	if err != nil {
+		return err
+	}
+	return runBootstrap(ctx, "bootstrap business runtime", steps)
 }
 
-func (p businessProvisioning) bootstrapSteps() []bootstrapStep {
-	return []bootstrapStep{
-		newBootstrapTask("business modules", p.initRuntime),
-	}
+func (p businessProvisioning) bootstrapSteps() ([]bootstrapStep, error) {
+	return p.lifecycle().bootstrapSteps(businessCapabilityProfileRuntime)
 }
 
 func (p businessProvisioning) initRuntime() error {

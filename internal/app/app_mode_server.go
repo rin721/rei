@@ -4,25 +4,37 @@ import (
 	"context"
 )
 
-func (a *App) runModeServer(ctx context.Context) (err error) {
-	if err := a.bootstrapServer(ctx); err != nil {
+type serverModeRuntime struct {
+	app *App
+}
+
+func newServerModeRuntime(app *App) serverModeRuntime {
+	return serverModeRuntime{app: app}
+}
+
+func (a *App) bootstrapServer(ctx context.Context) error {
+	return newServerModeRuntime(a).bootstrap(ctx)
+}
+
+func (r serverModeRuntime) run(ctx context.Context) (err error) {
+	if err := r.bootstrap(ctx); err != nil {
 		return err
 	}
 	defer func() {
-		shutdownErr := a.Shutdown(context.TODO())
+		shutdownErr := r.app.Shutdown(context.TODO())
 		if err == nil {
 			err = shutdownErr
 		}
 	}()
 
-	if a.options.DryRun {
+	if r.app.options.DryRun {
 		return nil
 	}
 
-	if err := a.delivery.httpServer.Start(); err != nil {
+	if err := r.app.deliveryProvisioning().start(ctx); err != nil {
 		return err
 	}
-	if err := a.startReload(ctx); err != nil {
+	if err := r.app.infrastructureProvisioning().startReload(ctx); err != nil {
 		return err
 	}
 
@@ -30,17 +42,17 @@ func (a *App) runModeServer(ctx context.Context) (err error) {
 	return nil
 }
 
-func (a *App) bootstrapServer(ctx context.Context) error {
-	if err := a.bootstrapServerInfrastructure(ctx); err != nil {
+func (r serverModeRuntime) bootstrap(ctx context.Context) error {
+	if err := r.app.infrastructureProvisioning().bootstrapServer(ctx); err != nil {
 		return err
 	}
-	if err := a.bootstrapBusinessRuntime(ctx); err != nil {
+	if err := r.app.businessProvisioning().bootstrap(ctx); err != nil {
 		return err
 	}
-	if err := a.bootstrapDeliveryRuntime(ctx); err != nil {
+	if err := r.app.deliveryProvisioning().bootstrap(ctx); err != nil {
 		return err
 	}
 
-	a.registerReloadHooks()
+	r.app.infrastructureProvisioning().registerReloadHooks(r.app.reloadComponents)
 	return nil
 }
